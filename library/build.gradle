@@ -53,7 +53,7 @@ publishing {
     publications {
         create("bar", MavenPublication) { publication ->
             groupId = "io.fastpix.data"
-            artifactId = "core-sdk"
+            artifactId = "core-android-sdk"
             version = "1.0.0"
 
             artifact("$buildDir/outputs/aar/library-release.aar")
