@@ -1,6 +1,7 @@
 package io.fastpix.data.monitor;
 
 import android.util.Log;
+
 import io.fastpix.data.request.CustomOptions;
 import io.fastpix.data.streaming.AbstractEventObserver;
 import io.fastpix.data.streaming.OveruseDetectedEventContract;
@@ -11,9 +12,11 @@ import io.fastpix.data.entity.BasicQueryData;
 import io.fastpix.data.request.AnalyticsEventLogger;
 import io.fastpix.data.request.FastPixMetrics;
 import io.fastpix.data.Interfaces.RequestHandler;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,55 +39,35 @@ import java.util.concurrent.TimeUnit;
  * a network endpoint, and handling the network request completion and responses.
  */
 public class SignalBatchMonitor extends AbstractEventObserver implements RequestHandler.IFPNetworkRequestsCompletion2 {
-    /**
-     * The event name used for tracking events.
-     */
+
+    // The event name used for tracking events.
     public static final String EVENT_NAME = "evna";
 
-    /**
-     * The beacon domain associated with the events.
-     */
+    //The beacon domain associated with the events.
     public static final String BEACON_DOMAIN = "bedn";
 
-    /**
-     * The constant for identifying when a view has been completed.
-     */
+    //The constant for identifying when a view has been completed.
     public static final String VIEW_COMPLETED = "viewCompleted";
 
-    /**
-     * The name of the event queue used for FP stats events.
-     */
+    //The name of the event queue used for FP stats events.
     public static final String FP_STATS_EVENT_QUEUE = "FPStatsEventQueue";
 
-    /**
-     * The elapsed time for the last completed round trip in milliseconds.
-     */
+    //The elapsed time for the last completed round trip in milliseconds.
     protected long roundTripLastCompletedTimeElapsed;
 
-    /**
-     * The start time of the current round trip in milliseconds.
-     */
+    //The start time of the current round trip in milliseconds.
     protected long roundTripStartTime;
 
-    /**
-     * Flag indicating whether the last round trip succeeded.
-     */
+    //Flag indicating whether the last round trip succeeded.
     protected boolean roundTripLastSucceded;
 
-    /**
-     * The timestamp of the last beacon sent, in milliseconds.
-     * Defaults to 0L indicating no beacon has been sent.
-     */
+    //The timestamp of the last beacon sent, in milliseconds. Defaults to 0L indicating no beacon has been sent.
     protected long lastBeaconSentTime = 0L;
 
-    /**
-     * The number of failures encountered during beacon sending.
-     */
+    //The number of failures encountered during beacon sending.
     protected int failureCount = 0;
 
-    /**
-     * A boolean flag used for internal state management.
-     */
+    //A boolean flag used for internal state management.
     private boolean aBoolean = true;
 
     String valueOfUnUsed = "";
@@ -222,14 +205,11 @@ public class SignalBatchMonitor extends AbstractEventObserver implements Request
             ));
             return;
         }
-
         String eventType = monitoredEvent.getEventType();
         QueryDataEntity queryData = monitoredEvent.getQuery();
         callToViewBeginAndViewCompeted(eventType, queryData);
-
         this.aLong = System.currentTimeMillis();
         this.isTrackballEvent = !this.aTrack(monitoredEvent);
-
         if (this.hashSet.contains(eventType) || this.isTrackballEvent) {
             if (this.isTrackballEvent) {
                 this.eventQueue.add(new OveruseDetectedEventContract(monitoredEvent));
@@ -255,14 +235,11 @@ public class SignalBatchMonitor extends AbstractEventObserver implements Request
     private void callToViewBeginAndViewCompeted(String eventType, QueryDataEntity queryData) throws JSONException {
         if (!eventType.equals("viewBegin") && !eventType.equals(VIEW_COMPLETED) &&
                 this.queryDataEntity != null && System.currentTimeMillis() - this.aLong < 600000L) {
-
             JSONObject eventJson = queryData.getFPDictionary();
             BasicQueryData updatedQueryData = new BasicQueryData();
-
             Iterator<String> keys = eventJson.keys();
             while (keys.hasNext()) {
                 String key = keys.next();
-
                 if (QueryDataEntity.isKeyJsonObject(key)) {
                     updatedQueryData.put(key, eventJson.getJSONObject(key));
                 } else if (QueryDataEntity.isKeyJsonArray(key)) {
@@ -276,7 +253,6 @@ public class SignalBatchMonitor extends AbstractEventObserver implements Request
         } else {
             this.queryDataEntity = new BasicQueryData();
             this.queryDataEntity.update(queryData);
-
             if (eventType.equals(VIEW_COMPLETED)) {
                 this.queryDataEntity = null;
             }
@@ -305,9 +281,8 @@ public class SignalBatchMonitor extends AbstractEventObserver implements Request
         if (this.queryDataEntity.get(key) == null ||
                 !value.equals(this.queryDataEntity.get(key)) ||
                 this.hashSet1.contains(key) ||
-                key.equalsIgnoreCase("e") ||
-                key.startsWith("q") || key.startsWith("d")) {
-
+                key.equalsIgnoreCase("evna") ||
+                key.startsWith("rq") || key.startsWith("d")) {
             updatedQueryData.put(key, value);
             this.queryDataEntity.put(key, value);
         }
@@ -355,12 +330,10 @@ public class SignalBatchMonitor extends AbstractEventObserver implements Request
             if (monitoredEvent != null) {
                 this.eventQueue.add(monitoredEvent);
             }
-
             if (System.currentTimeMillis() - this.lastBeaconSentTime > this.getNextBeaconTimeInterval()) {
                 this.processEvents(false);
                 this.lastBeaconSentTime = System.currentTimeMillis();
             }
-
             return this.eventQueue.size() <= 3600;
         } else {
             AnalyticsEventLogger.d(FP_STATS_EVENT_QUEUE, "Event not queued, ratelimited: " + this.isTrackballEvent + ",queue size: " + this.eventQueue.size() + ", queue limit: 3600");
@@ -404,50 +377,39 @@ public class SignalBatchMonitor extends AbstractEventObserver implements Request
 
     private void processEvents(boolean forceSend) throws JSONException {
         int eventCount = forceSend ? this.eventQueue.size() : Math.min(this.eventQueue.size(), this.trackerEngineMonitor.trackCodeInt);
-
         if (eventCount == 0) return;
-
         AnalyticsEventLogger.d(FP_STATS_EVENT_QUEUE, String.format("Attempting to send %d events, total queue size: %d", eventCount, this.eventQueue.size()));
-
         if ((this.aBoolean || forceSend) && this.dispatcher != null) {
             try {
                 JSONArray eventArray = new JSONArray();
                 StringBuilder eventTypes = new StringBuilder();
                 String beaconDomain = "";
-
                 for (int i = 0; i < eventCount && !this.eventQueue.isEmpty(); i++) {
                     MonitoredEventContract monitoredEvent = this.eventQueue.remove(0);
                     this.pendingEventsQueue.add(monitoredEvent);
-
                     String eventType = monitoredEvent.getEventType();
                     eventTypes.append(eventType).append(", ");
                     beaconDomain = checkBeaconDomain(this.customOptions);
-
                     JSONObject eventData = monitoredEvent.getQuery().getFPDictionary();
                     eventData.put(EVENT_NAME, eventType);
                     eventData.put(BEACON_DOMAIN, beaconDomain.substring(1));
-
                     JSONArray keys = eventData.names();
-
                     if (this.isVerbose) {
                         AnalyticsEventLogger.d(FP_STATS_EVENT_QUEUE, String.format("Sending %s%n%s", eventType, "trackableEvent"));
                     } else {
                         AnalyticsEventLogger.d(FP_STATS_EVENT_QUEUE, String.format("Sending %s with %d attributes", eventType, keys.length()));
                     }
-
                     for (int j = 0; j < keys.length(); j++) {
                         String key = keys.getString(j);
                         if (key.equals("wsid") && this.workSpaceId == null) {
                             this.workSpaceId = eventData.getString(key);
                         }
                     }
-
                     eventArray.put(eventData);
                 }
 
                 // Construct event metadata
                 callToContractEventsMetaData(eventArray, forceSend, eventCount, eventTypes, beaconDomain);
-
             } catch (Exception e) {
                 AnalyticsEventLogger.exception(e, FP_STATS_EVENT_QUEUE, "Error sending Beacon Queue");
                 this.aBoolean = true;
@@ -477,23 +439,17 @@ public class SignalBatchMonitor extends AbstractEventObserver implements Request
     private void callToContractEventsMetaData(JSONArray eventArray, boolean forceSend, int eventCount, StringBuilder eventTypes, String beaconDomain) {
         try {
             JSONObject eventPayload = new JSONObject();
-
             JSONObject metadata = new JSONObject();
             if (this.roundTripLastSucceded) {
                 metadata.put("rtt_ms", this.roundTripLastCompletedTimeElapsed);
             }
-
             metadata.put("transmission_timestamp", System.currentTimeMillis());
-
             eventPayload.put("events", eventArray);
             eventPayload.put("metadata", metadata);
-
             AnalyticsEventLogger.d(FP_STATS_EVENT_QUEUE, String.format("%s %d events to batch handler", forceSend ? "Flushing" : "Submitting", eventCount));
             AnalyticsEventLogger.d(FP_STATS_EVENT_QUEUE, "    [" + eventTypes + "]");
-
             this.aBoolean = false;
             this.roundTripStartTime = System.currentTimeMillis();
-
             this.dispatcher.postWithCompletion(
                     beaconDomain, this.workSpaceId, eventPayload.toString(),
                     aHashString(this.workSpaceId), this

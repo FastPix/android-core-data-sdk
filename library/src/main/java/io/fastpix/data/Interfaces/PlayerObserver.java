@@ -19,6 +19,8 @@ public interface PlayerObserver {
 
     boolean isPaused();
 
+    boolean isAutoPlay();
+
     boolean isBuffering();
 
     int getPlayerViewWidth();

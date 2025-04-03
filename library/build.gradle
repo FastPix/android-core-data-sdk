@@ -52,7 +52,7 @@ publishing {
         create("bar", MavenPublication) { publication ->
             groupId = "io.fastpix.data"
             artifactId = "core-sdk"
-            version = "1.0.0"
+            version = "1.0.2"
 
             artifact("$buildDir/outputs/aar/library-release.aar")
 
@@ -73,9 +73,8 @@ publishing {
     repositories {
         maven {
             name = "GithubPackages"
-            url = uri("https://maven.pkg.github.com/FastPix/android-data-core-sdk")
-
-            credentials{
+            url = uri("https://maven.pkg.github.com/FastPix/android-core-data-sdk")
+            credentials {
                 username = project.findProperty("gpr.user") ?: ""
                 password = project.findProperty("gpr.key") ?: ""
             }

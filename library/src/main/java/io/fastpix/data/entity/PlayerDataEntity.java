@@ -35,8 +35,8 @@ public class PlayerDataEntity extends QueryDataEntity {
     public static final String PLAYER_IS_PAUSED = "plispu";
     public static final String PLAYER_LANGUAGE_CODE = "pllncd";
     public static final String PLAYER_LOAD_TIME = "plloti";
-    public static final String PLAYER_FASTPIX_PLUGIN_NAME = "plfppina";
-    public static final String PLAYER_FASTPIX_PLUGIN_VERSION = "plfppivn";
+    public static final String PLAYER_FASTPIX_PLUGIN_NAME = "plfpsdna";//plfppina
+    public static final String PLAYER_FASTPIX_PLUGIN_VERSION = "plfpsdvn";//plfppivn
     public static final String PLAYER_PLAYHEAD_TIME = "plphti";
     public static final String PLAYER_PRELOAD_ON = "plpron";
     public static final String PLAYER_SEQUENCE_NUMBER = "plsqnu";
@@ -48,8 +48,8 @@ public class PlayerDataEntity extends QueryDataEntity {
     public static final String PLAYER_PROGRAM_TIME = "plpmti";
     public static final String PLAYER_MANIFEST_NEWEST_PROGRAM_TIME = "plmfnepmti";
     public static final String PLAYER_ERROR_CONTEXT = "plercx";
-//    public static final List<String> PDD;
 
+    //    public static final List<String> PDD;
     public static final List<String> PDD = Collections.unmodifiableList(Arrays.asList(
             PAGE_LOAD_TIME, PAGE_URL, PLAYER_AUTOPLAY_ON, PLAYER_ERROR_CODE, PLAYER_ERROR_MESSAGE,
             PLAYER_HEIGHT, PLAYER_INSTANCE_ID, PLAYER_IS_FULLSCREEN, PLAYER_IS_PAUSED, PLAYER_LANGUAGE_CODE,
@@ -58,6 +58,7 @@ public class PlayerDataEntity extends QueryDataEntity {
             PLAYER_STARTUP_TIME, PLAYER_VIEW_COUNT, PLAYER_WIDTH, PLAYER_PROGRAM_TIME,
             PLAYER_MANIFEST_NEWEST_PROGRAM_TIME, PLAYER_ERROR_CONTEXT
     ));
+
     // Default constructor
     public PlayerDataEntity() {
     }
@@ -124,7 +125,7 @@ public class PlayerDataEntity extends QueryDataEntity {
      * @param playerAutoplayOn The autoplay status to set (e.g., "true" or "false").
      * @throws JSONException If there's an error during setting the value.
      */
-    public void setPlayerAutoplayOn(String playerAutoplayOn) throws JSONException {
+    public void setPlayerAutoplayOn(Boolean playerAutoplayOn) throws JSONException {
         if (playerAutoplayOn != null) {
             this.put(PLAYER_AUTOPLAY_ON, playerAutoplayOn);
         }
@@ -634,34 +635,4 @@ public class PlayerDataEntity extends QueryDataEntity {
             super.put(PLAYER_ERROR_CONTEXT, playerErrorContext);
         }
     }
-
-    // Static initialization block to populate the keys list
-  /*  static {
-        List<String> keys = new ArrayList();
-        keys.add(PAGE_LOAD_TIME);
-        keys.add(PAGE_URL);
-        keys.add(PLAYER_AUTOPLAY_ON);
-        keys.add(PLAYER_ERROR_CODE);
-        keys.add(PLAYER_ERROR_MESSAGE);
-        keys.add(PLAYER_HEIGHT);
-        keys.add(PLAYER_INSTANCE_ID);
-        keys.add(PLAYER_IS_FULLSCREEN);
-        keys.add(PLAYER_IS_PAUSED);
-        keys.add(PLAYER_LANGUAGE_CODE);
-        keys.add(PLAYER_LOAD_TIME);
-        keys.add(PLAYER_FASTPIX_PLUGIN_NAME);
-        keys.add(PLAYER_FASTPIX_PLUGIN_VERSION);
-        keys.add(PLAYER_PLAYHEAD_TIME);
-        keys.add(PLAYER_PRELOAD_ON);
-        keys.add(PLAYER_SEQUENCE_NUMBER);
-        keys.add(PLAYER_SOFTWARE_NAME);
-        keys.add(PLAYER_SOFTWARE_VERSION);
-        keys.add(PLAYER_STARTUP_TIME);
-        keys.add(PLAYER_VIEW_COUNT);
-        keys.add(PLAYER_WIDTH);
-        keys.add(PLAYER_PROGRAM_TIME);
-        keys.add(PLAYER_MANIFEST_NEWEST_PROGRAM_TIME);
-        keys.add(PLAYER_ERROR_CONTEXT);
-        PDD = Collections.unmodifiableList(keys);
-    }*/
 }

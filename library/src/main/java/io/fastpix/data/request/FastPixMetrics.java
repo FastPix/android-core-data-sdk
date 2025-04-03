@@ -57,6 +57,7 @@ public class FastPixMetrics extends AbstractEventObserver {
     private String lContext;
     private boolean isPlayerSizeChange;
     private MediaPresentation mediaPresentation;
+    private Boolean isPreLoaded = false;
     private String oFPViewerId;
     private String pViewerApplicationName;
     private String qAppVersion;
@@ -117,7 +118,6 @@ public class FastPixMetrics extends AbstractEventObserver {
                 streamingData.setCustomerPlayerData(this.customerData.getCustomerPlayerData());
             }
             if (this.customerData != null && this.customerData.getCustomerVideoData() != null) {
-
                 streamingData.setCustomerVideoData(this.customerData.getCustomerVideoData());
             }
             if (this.customerData != null && this.customerData.getCustomerViewData() != null) {
@@ -133,8 +133,6 @@ public class FastPixMetrics extends AbstractEventObserver {
                 this.aEventParam(streamingData);
             }
             this.aEventParam(new MediaStreaming(MediaStreaming.EventType.playerReady, playerData));
-        } else {
-            throw new IllegalArgumentException("customerPlayerData cannot be null");
         }
     }
 
@@ -178,7 +176,6 @@ public class FastPixMetrics extends AbstractEventObserver {
             throw new IllegalArgumentException("customerPlayerData cannot be null");
         }
     }
-
 
     public CustomerVideoDataEntity getCustomerVideoData() {
         return this.customerData != null ? this.customerData.getCustomerVideoData() : null;
@@ -270,6 +267,10 @@ public class FastPixMetrics extends AbstractEventObserver {
         this.mediaPresentation = mediaPresentation;
     }
 
+    public void setPreLoaded(Boolean isTrue) {
+        this.isPreLoaded = isTrue;
+    }
+
     public void setSessionData(@Nullable List<UserSessionTag> userSessionTags) throws Exception {
         Hub.dispatchEventForPlayer(this.stringCore, new UserSessionEventContract(userSessionTags));
     }
@@ -297,15 +298,12 @@ public class FastPixMetrics extends AbstractEventObserver {
         if (this.customerData.getCustomerVideoData() != null) {
             streamingData.setCustomerVideoData(this.customerData.getCustomerVideoData());
         }
-
         if (this.customerData.getCustomData() != null) {
             streamingData.setCustomData(this.customerData.getCustomData());
         }
-
         if (this.customerData.getCustomerViewData() != null) {
             streamingData.setCustomerViewData(this.customerData.getCustomerViewData());
         }
-
         this.videoData = new VideoDataEntity();
         streamingData.setVideoData(this.videoData);
         this.aEventParam(streamingData);
@@ -450,9 +448,6 @@ public class FastPixMetrics extends AbstractEventObserver {
         }
     }
 
-    public void updateHostDeviceData() {
-    }
-
     public void setDroppedFramesCount(Long droppedFramesCount) {
         this.iDroppedCount = droppedFramesCount;
     }
@@ -476,21 +471,21 @@ public class FastPixMetrics extends AbstractEventObserver {
             return playerData;
         } else {
             playerData.setPlayerIsPaused(this.playerObserver.isPaused());
+            playerData.setPlayerAutoplayOn(this.playerObserver.isAutoPlay());
+            playerData.setPlayerPreloadOn(this.isPreLoaded);
+            Log.e("playerObserver", this.playerObserver.isPaused() + " " + this.playerObserver.isAutoPlay());
             playerData.setPlayerPlayheadTime(this.playerObserver.getCurrentPosition());
             if (this.playerObserver.getPlayerProgramTime() != null && this.playerObserver.getPlayerProgramTime() != -1L) {
                 playerData.setPlayerProgramTime(this.playerObserver.getPlayerProgramTime());
             }
-
             if (this.playerObserver.getPlayerManifestNewestTime() != null && this.playerObserver.getPlayerManifestNewestTime() != -1L) {
                 playerData.setPlayerManifestNewestProgramTime(this.playerObserver.getPlayerManifestNewestTime());
             }
-
             if (this.jMessage != null) {
                 playerData.setPlayerErrorMessage(this.jMessage);
                 playerData.setPlayerErrorCode(Integer.toString(this.kExceptionCode));
                 playerData.setPlayerErrorContext(this.lContext);
             }
-
             if (!this.isPlayerSizeChange) {
                 this.dPlayerViewWidth = aParamsWithInt(this.playerObserver.getPlayerViewWidth(), 0, 1048576);
                 this.ePlayerViewHeight = aParamsWithInt(this.playerObserver.getPlayerViewHeight(), 0, 1048576);
@@ -510,21 +505,18 @@ public class FastPixMetrics extends AbstractEventObserver {
             } else {
                 boolean isPresentation = this.mediaPresentation == MediaPresentation.FULLSCREEN;
                 playerData.setPlayerIsFullscreen(String.valueOf(isPresentation));
+                Log.e("setPlayerIsFullscreen", "if520");
                 if (this.ePlayerViewHeight != null && this.dPlayerViewWidth != null) {
                     playerData.setPlayerHeight(this.ePlayerViewHeight);
                     playerData.setPlayerWidth(this.dPlayerViewWidth);
                 }
             }
-//            callToPlayerDataElse(playerData);
-//            callToPlayerNextCondition(playerData);
             return playerData;
         }
     }
 
-
     private void updateEventsFromLocal() throws JSONException {
         boolean isItTrue = false;
-
         if (this.playerObserver != null) {
             if (this.playerObserver.getVideoHoldback() != null && this.playerObserver.getVideoHoldback() != -1L) {
                 this.videoData.setVideoHoldback(this.playerObserver.getVideoHoldback());
@@ -583,9 +575,9 @@ public class FastPixMetrics extends AbstractEventObserver {
     }
 
     public synchronized void handle(EventContract eventContract) throws JSONException {
-
         String eventType = eventContract.getType();
         PlayerDataEntity playerData = this.getPlayerData();
+
         // Handle general playback events
         if (!eventContract.isPlayback() && !eventContract.isError()) {
             Log.e("Do not Track", "if");
@@ -659,7 +651,6 @@ public class FastPixMetrics extends AbstractEventObserver {
                     break;
                 default:
                     break;
-
             }
             if (this.playerObserver != null) {
                 (new Date()).getTime();
