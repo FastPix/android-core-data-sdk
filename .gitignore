@@ -1,0 +1,91 @@
+# Gradle files
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+
+# Local configuration files
+local.properties
+gradle.properties
+*.iml
+.idea/
+.idea/*
+*.ipr
+*.iws
+
+# Android Studio captures
+captures/
+
+# Generated files
+generated/
+out/
+
+# Signing keys
+*.jks
+*.keystore
+*.pem
+*.p12
+*.key
+*.der
+
+# Logs
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# JetBrains cache
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# Build outputs
+build/
+*/build/
+outputs/
+reports/
+
+# Gradle caches and locks
+.gradle/
+**/build/
+.gradle/
+gradle-app.setting
+gradle-app.properties
+.gradle_local/
+
+# Dependency directories
+.libs/
+*.aar
+*.apk
+*.ap_
+
+# NDK / CMake
+.cxx/
+.externalNativeBuild/
+
+# Test results
+test-results/
+coverage/
+
+# Misc
+*.swp
+*.swo
+
+# Lint
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+*.lint
+
+# Firebase / Crashlytics
+google-services.json
+fabric.properties
+crashlytics-build.properties
+
+# Android profiling
+*.hprof
