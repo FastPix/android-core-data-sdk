@@ -1,6 +1,5 @@
 package io.fastpix.data.domain.wallclock
 
-import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,13 +26,11 @@ object ViewWatchCounter {
             while (isActive) {
                 delay(intervalMillis)
                 _value += intervalMillis
-                Log.e("TAG", "start: Increment Started $_value", )
             }
         }
     }
 
     fun pause() {
-        Log.e("TAG", "start: Increment Stopped $_value", )
         job?.cancel()
         job = null
     }

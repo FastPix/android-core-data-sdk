@@ -73,7 +73,7 @@ publishing {
         create<MavenPublication>("bar") {
             groupId = "io.fastpix.data"
             artifactId = "core"
-            version = "1.0.3"
+            version = "1.1.0"
             artifact("${buildDir}/outputs/aar/android-data-core-sdk-release.aar")
 
             pom.withXml {

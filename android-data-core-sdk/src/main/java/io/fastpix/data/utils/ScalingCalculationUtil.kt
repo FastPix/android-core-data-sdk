@@ -200,10 +200,6 @@ class ScalingTracker {
             totalUpscalingTimeWeighted, totalDownscalingTimeWeighted
         )
         
-        // Debug logging for scaling calculation
-        println("ScalingTracker DEBUG: playerWidth=$playerWidth, playerHeight=$playerHeight, videoSourceWidth=$videoSourceWidth, videoSourceHeight=$videoSourceHeight")
-        println("ScalingTracker DEBUG: timeDelta=$timeDelta, upscale=${result.upscalePercentage}, downscale=${result.downscalePercentage}")
-        
         // Calculate with raw pixel dimensions (no density adjustment)
         // This is what Mux might be using
         val rawPlayerWidth = (playerWidth * 3.0).toInt()  // Assuming 3x density
@@ -213,9 +209,6 @@ class ScalingTracker {
         val rawHeightRatio = rawPlayerHeight.toDouble() / videoSourceHeight.toDouble()
         val rawMinRatio = minOf(rawWidthRatio, rawHeightRatio)
         val rawDownscale = maxOf(0.0, 1.0 - rawMinRatio)
-        
-        println("ScalingTracker DEBUG: Raw pixel dimensions - playerWidth=$rawPlayerWidth, playerHeight=$rawPlayerHeight")
-        println("ScalingTracker DEBUG: Raw downscale=${(rawDownscale * 100).format(2)}%")
         
         // Calculate aspect-ratio adjusted dimensions (what Mux might be using)
         val videoAspectRatio = videoSourceWidth.toDouble() / videoSourceHeight.toDouble()
@@ -237,10 +230,6 @@ class ScalingTracker {
         val effectiveHeightRatio = effectivePlayerHeight.toDouble() / videoSourceHeight.toDouble()
         val effectiveMinRatio = minOf(effectiveWidthRatio, effectiveHeightRatio)
         val effectiveDownscale = maxOf(0.0, 1.0 - effectiveMinRatio)
-        
-        println("ScalingTracker DEBUG: videoAspectRatio=${videoAspectRatio.format(4)}, playerAspectRatio=${playerAspectRatio.format(4)}")
-        println("ScalingTracker DEBUG: effectivePlayerWidth=$effectivePlayerWidth, effectivePlayerHeight=$effectivePlayerHeight")
-        println("ScalingTracker DEBUG: effectiveDownscale=${(effectiveDownscale * 100).format(2)}%")
         
         // Add extension function for formatting
         fun Double.format(digits: Int): String = "%.${digits}f".format(this)

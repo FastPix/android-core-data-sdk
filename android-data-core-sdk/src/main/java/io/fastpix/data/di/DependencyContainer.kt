@@ -68,7 +68,7 @@ object DependencyContainer {
     fun getOkHttpClient(): OkHttpClient {
         if (_okHttpClient == null) {
             val loggingInterceptor = HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                level = HttpLoggingInterceptor.Level.BASIC
             }
 
             // User-Agent interceptor to set proper Android user agent

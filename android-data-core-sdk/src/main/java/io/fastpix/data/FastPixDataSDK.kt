@@ -82,13 +82,6 @@ class FastPixDataSDK {
         // Mark as initialized
         ViewWatchCounter.start()
         isInitialized = true
-
-        Logger.log("FastPix SDK initialized successfully")
-        Logger.log("Workspace ID: ${config.workspaceId}")
-        Logger.log("Beacon URL: ${config.beaconUrl}")
-        Logger.log("Viewer ID: ${config.viewerId}")
-        Logger.log("Player Listener: ${config.playerListener::class.simpleName}")
-        Logger.log("Logging enabled: ${config.enableLogging}")
     }
 
     private fun initializeDependencies() {
@@ -142,7 +135,6 @@ class FastPixDataSDK {
         }
         val config = configuration ?: throw IllegalStateException("Configuration is null")
         if (SessionService.validateSession()) {
-            Log.e("TAG", "dispatchEvent: Event came ${event.name}", )
             when (event) {
                 PlayerEventType.play -> {
                     ViewWatchCounter.start()
