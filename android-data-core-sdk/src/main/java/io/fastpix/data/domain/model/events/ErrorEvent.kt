@@ -150,12 +150,8 @@ class ErrorEvent(
          * Create an ErrorEvent with all data populated
          */
         fun createErrorEvent(configService: SDKConfiguration): ErrorEvent {
-            val sdkStateService = DependencyContainer.getSDKStateService()
             val deviceInfoUtility = DependencyContainer.getDeviceInfoUtility()
             val baseData = getBaseEventData(configService)
-            
-            // Use configService.playerListener directly to avoid state synchronization issues
-            // during rapid init/clear cycles
             val playerListener = configService.playerListener
             val currentPlayheadTime = playerListener.playHeadTime() ?: 0
             scalingTracker.calculateScalingForCurrentInterval(currentPlayheadTime.toLong())

@@ -1,8 +1,6 @@
 package io.fastpix.data
 
 import android.content.Context
-import android.util.Log
-import io.fastpix.data.sdkBuild.SDKBuildConfig
 import io.fastpix.data.di.DependencyContainer
 import io.fastpix.data.domain.SDKConfiguration
 import io.fastpix.data.domain.enums.PlayerEventType
@@ -27,6 +25,7 @@ import io.fastpix.data.domain.repository.EventDispatcher
 import io.fastpix.data.domain.state.SDKStateService
 import io.fastpix.data.domain.state.SessionService
 import io.fastpix.data.domain.wallclock.ViewWatchCounter
+import io.fastpix.data.sdkBuild.SDKBuildConfig
 import io.fastpix.data.utils.Logger
 import io.fastpix.data.utils.ScalingTracker
 
