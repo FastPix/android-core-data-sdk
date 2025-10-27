@@ -198,7 +198,7 @@ class ErrorEvent(
                 videoHostName = Utils.getDomain(playerListener.sourceHostName()),
                 autoPlay = playerListener.isAutoPlay()?.toString(),
                 viewSessionId = SessionService.getSessionId(),
-                mimeType = playerListener.mimeType(),
+                mimeType = playerListener.mimeType()?.lowercase(),
                 fastPixApiVersion = "1.0",
                 videoCodec = playerListener.playerCodec(),
                 videoLanguage = configService.videoData.videoLanguage,

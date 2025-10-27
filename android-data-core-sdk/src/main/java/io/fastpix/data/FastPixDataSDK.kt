@@ -211,7 +211,6 @@ class FastPixDataSDK {
                 }
 
                 PlayerEventType.error -> {
-                    ViewWatchCounter.pause()
                     val errorEvent = ErrorEvent.createErrorEvent(config)
                     eventDispatcher?.dispatchEvent(errorEvent.toJson())
                 }

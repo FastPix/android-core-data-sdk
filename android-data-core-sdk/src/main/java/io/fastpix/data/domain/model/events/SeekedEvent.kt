@@ -51,14 +51,10 @@ class SeekedEvent(
             } else {
                 ViewWatchCounter.start()
             }
-            // Get base event data
             val baseData = getBaseEventData(configService)
-            
-            // Handle seeked metrics - equivalent to metrix.handleSeeked()
             eventDataCalculator.onSeekedEvent()
 
-            val seekDuration = eventDataCalculator.calculateSeekDuration()
-            val maxSeekDuration = eventDataCalculator.calculateMaxSeekDuration()
+            val seekDuration = eventDataCalculator.calculateTotalSeekDuration()
             val seekCount = eventDataCalculator.calculateSeekCount()
 
             return SeekedEvent(
@@ -72,8 +68,8 @@ class SeekedEvent(
                 playerInstanceId = baseData["plinid"],
                 viewWatchTime = baseData["vewati"],
                 connectionType = baseData["vicity"],
-                viewSeekDuration = maxSeekDuration,
-                viewMaxSeekDuration = maxSeekDuration,
+                viewSeekDuration = seekDuration,
+                viewMaxSeekDuration = seekDuration,
                 viewSeekCount = seekCount
             )
         }
