@@ -67,7 +67,7 @@ class PlayEvent(
                 playerInstanceId = baseData["plinid"],
                 viewWatchTime = baseData["vewati"],
                 connectionType = baseData["vicity"],
-                videoId = configService.videoData.videoId,
+                videoId = configService.videoData?.videoId,
                 viewRebufferDuration = eventDataCalculator.calculateRebufferDuration(),
                 viewBufferFrequency = eventDataCalculator.calculateBufferFrequency(),
                 videoDuration = sdkStateService.sdkState.value.playerListener?.sourceDuration()?.toString(),

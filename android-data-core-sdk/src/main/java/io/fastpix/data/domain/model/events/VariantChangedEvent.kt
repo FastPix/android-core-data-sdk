@@ -20,7 +20,6 @@ class VariantChangedEvent (
     @SerialName("vdsoht") var videoSourceHeight: String? = null,
     @SerialName("vdid") var videoId: String? = null,
     @SerialName("vdsofs") var frameRate: String? = null,
-    @SerialName("vdsocc") var codec: String? = null,
     @SerialName("vdsomity") var mimeType: String? = null,
     @SerialName("vdsobi") var bitrate: String? = null,
     @SerialName("evna") var eventName: String = "variantChanged"
@@ -36,7 +35,6 @@ class VariantChangedEvent (
             "vdsoht" to videoSourceHeight,
             "vdid" to videoId,
             "vdsofs" to frameRate,
-            "vdsocc" to codec,
             "vdsomity" to mimeType,
             "vdsobi" to bitrate,
             "evna" to eventName,
@@ -72,7 +70,6 @@ class VariantChangedEvent (
                 videoSourceHeight = playerListener.videoSourceHeight().toString(),
                 videoId = sdkState.videoDataDetails?.videoId,
                 frameRate = playerListener.sourceAdvertiseFrameRate().toString(),
-                codec = playerListener.getVideoCodec().toString(),
                 mimeType = playerListener.mimeType().toString(),
                 bitrate = playerListener.sourceAdvertisedBitrate().toString(),
 

@@ -18,5 +18,4 @@ enum class PlayerEventType {
     requestFailed,
     requestCanceled,
     requestCompleted
-
 }

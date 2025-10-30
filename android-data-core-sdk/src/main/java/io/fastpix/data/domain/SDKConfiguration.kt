@@ -14,7 +14,7 @@ data class SDKConfiguration(
     val workspaceId: String,
     val beaconUrl: String? = null,
     val viewerId: String,
-    val videoData: VideoDataDetails,
+    val videoData: VideoDataDetails? = null,
     val playerListener: PlayerListener,
     val enableLogging: Boolean = true,
     val customData: CustomDataDetails? = null
@@ -25,7 +25,7 @@ data class SDKConfiguration(
         require(viewerId.isNotBlank()) { "Viewer ID is mandatory and cannot be blank" }
 
         // Validate video data (only videoId and videoTitle are mandatory)
-        require(videoData.videoId?.isNotBlank() == true) {
+        require(videoData?.videoId?.isNotBlank() == true) {
             "Video ID is mandatory and cannot be blank"
         }
         require(videoData.videoTitle?.isNotBlank() == true) {

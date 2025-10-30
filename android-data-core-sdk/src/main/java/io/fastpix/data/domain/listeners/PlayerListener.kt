@@ -13,7 +13,6 @@ interface PlayerListener {
     fun sourceFps(): String?
     fun sourceAdvertisedBitrate(): String?
     fun sourceAdvertiseFrameRate(): String?
-    fun currentPosition(): Int?
     fun sourceDuration(): Int?
     fun isPause(): Boolean?
     fun isAutoPlay(): Boolean?
@@ -26,4 +25,6 @@ interface PlayerListener {
     fun getBandWidthData(): BandwidthModel
     fun getPlayerError(): ErrorModel
     fun getVideoCodec(): String?
+    fun getSoftwareName(): String?
+    fun getSoftwareVersion(): String?
 }

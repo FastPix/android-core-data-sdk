@@ -386,21 +386,6 @@ class EventDispatcher(
     }
 
     /**
-     * Get current queue status for debugging
-     */
-    fun getQueueStatus(): QueueStatus {
-        return QueueStatus(
-            primaryQueueSize = primaryQueue.size,
-            overflowQueueSize = overflowQueue.size,
-            retryQueueSize = retryQueue.size,
-            isDispatching = isDispatching.get(),
-            isNetworkAvailable = isNetworkAvailable.get(),
-            isPulseScheduled = isPulseScheduled.get(),
-            retryAttempts = retryAttempts.get()
-        )
-    }
-
-    /**
      * Flush all remaining events to the server before cleanup
      * If network is unavailable, will wait for network to come back before flushing
      */
@@ -522,14 +507,4 @@ class EventDispatcher(
         }
         Logger.log("EventDispatcher", "Cleanup completed")
     }
-
-    data class QueueStatus(
-        val primaryQueueSize: Int,
-        val overflowQueueSize: Int,
-        val retryQueueSize: Int,
-        val isDispatching: Boolean,
-        val isNetworkAvailable: Boolean,
-        val isPulseScheduled: Boolean,
-        val retryAttempts: Int
-    )
 }

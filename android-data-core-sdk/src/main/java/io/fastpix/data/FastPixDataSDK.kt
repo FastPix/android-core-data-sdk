@@ -33,6 +33,7 @@ import io.fastpix.data.utils.ScalingTracker
  * FastPix Data SDK - Main entry point for the SDK
  */
 val scalingTracker = ScalingTracker()
+
 class FastPixDataSDK {
 
     private var isInitialized = false
@@ -140,6 +141,7 @@ class FastPixDataSDK {
                     val playEvent = PlayEvent.createPlayEvent(config)
                     eventDispatcher?.dispatchEvent(playEvent.toJson())
                 }
+
                 PlayerEventType.viewBegin -> {
                     ViewWatchCounter.start()
                     val viewBeginEvent = ViewBeginEvent.createViewBeginEvent(config)
@@ -200,7 +202,7 @@ class FastPixDataSDK {
 
                 PlayerEventType.ended -> {
                     ViewWatchCounter.pause()
-                    val endedEvent = EndedEvent.createEndedEvent(config)
+                    val endedEvent = EndedEvent.createEndedEvent(config, playheadTimeOverride)
                     eventDispatcher?.dispatchEvent(endedEvent.toJson())
                 }
 

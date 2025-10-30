@@ -44,18 +44,22 @@ class EndedEvent(
         /**
          * Create an EndedEvent with all data populated
          */
-        fun createEndedEvent(configService: SDKConfiguration): EndedEvent {
+        fun createEndedEvent(
+            configService: SDKConfiguration,
+            playheadTimeOverride: Int? = null
+        ): EndedEvent {
             val sdkStateService = DependencyContainer.getSDKStateService()
             val eventDataCalculator = DependencyContainer.getEventDataCalculator()
             val sdkState = sdkStateService.sdkState.value
             val baseData = getBaseEventData(configService)
+            val playheadTime = playheadTimeOverride?.toString() ?: baseData["plphti"]
             return EndedEvent(
                 workSpaceId = baseData["wsid"],
                 viewId = baseData["veid"],
                 viewSequenceNumber = baseData["vesqnu"],
                 playerSequenceNumber = baseData["plsqnu"],
                 beaconDomain = baseData["bedn"],
-                playheadTime = baseData["plphti"],
+                playheadTime = playheadTime,
                 viewerTimeStamp = baseData["vitp"],
                 playerInstanceId = baseData["plinid"],
                 viewWatchTime = baseData["vewati"],

@@ -53,10 +53,8 @@ class SeekedEvent(
             }
             val baseData = getBaseEventData(configService)
             eventDataCalculator.onSeekedEvent()
-
             val seekDuration = eventDataCalculator.calculateTotalSeekDuration()
             val seekCount = eventDataCalculator.calculateSeekCount()
-
             return SeekedEvent(
                 workSpaceId = baseData["wsid"],
                 viewId = baseData["veid"],

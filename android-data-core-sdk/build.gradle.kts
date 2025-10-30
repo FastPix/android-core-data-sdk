@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "io.fastpix.data"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
@@ -73,7 +73,7 @@ publishing {
         create<MavenPublication>("bar") {
             groupId = "io.fastpix.data"
             artifactId = "core"
-            version = "1.1.0"
+            version = "1.2.0"
             artifact("${buildDir}/outputs/aar/android-data-core-sdk-release.aar")
 
             pom.withXml {
