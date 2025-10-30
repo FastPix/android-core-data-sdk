@@ -181,6 +181,8 @@ object DependencyContainer {
         _sdkStateService?.clearSdkState()
         ViewWatchCounter.destroy()
         SessionService.reset()
+        // Cleanup network tracker before nulling it
+        _networkTracker?.cleanup()
         _okHttpClient = null
         _retrofit = null
         _eventApiService = null

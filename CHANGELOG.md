@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0]
+### Improved
+- **Major Code Optimization and Refactoring**:
+- Resolved crash in network monitoring caused by repeated registerNetworkCallback calls
+- Ensured network callback lifecycle is safely handled
+- Improved stability when tracking connectivity events
+
 ## [1.1.0]
 ### Changed
 - **Major Code Optimization and Refactoring**:

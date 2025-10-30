@@ -1,7 +1,7 @@
 # FastPix Android Data Core SDK
 
 [![License](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-green.svg)](CHANGELOG.md)
 [![Min SDK](https://img.shields.io/badge/minSdk-24-orange.svg)](build.gradle.kts)
 
 The FastPix Android Data Core SDK serves as the foundational layer for integrating video playback analytics within Android applications. As a core SDK, it does not function as a standalone player but instead enhances any video player by capturing essential playback metrics such as playback events, buffering patterns, and user engagement data. This data is automatically collected and made available on the FastPix dashboard for real-time monitoring and analysis. Designed for efficiency, the SDK ensures minimal impact on playback performance. While currently optimized for Java-based Android projects, future updates will introduce extended support for Kotlin and enhanced customization options for analytics tracking.
@@ -46,7 +46,7 @@ Add the dependency to your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("io.fastpix.data:core:1.1.0")
+    implementation("io.fastpix.data:core:1.2.0")
 }
 ```
 
@@ -91,17 +91,17 @@ class MainActivity : AppCompatActivity() {
                 videoDuration = "300000", // in milliseconds
                 videoThumbnail = "https://example.com/thumbnail.jpg",
                 fpPlaybackId = "playback-id" // Optional FastPix playback ID
-            ),
+            ), // Optional 
             playerData = PlayerDataDetails(
                 playerName = "ExoPlayer",
                 playerVersion = "2.19.0"
-            ),
+            ), // Optional 
             playerListener = MyPlayerListener(),
             enableLogging = true, // Enable for debugging
             customData = CustomDataDetails(
                 customField1 = "custom-value-1",
                 customField2 = "custom-value-2"
-            )
+            ) // Optional 
         )
         
         // Initialize SDK
@@ -139,8 +139,6 @@ class MyPlayerListener : PlayerListener {
     
     override fun sourceAdvertiseFrameRate(): String? = player.videoFormat?.frameRate?.toString()
     
-    override fun currentPosition(): Int? = player.currentPosition.toInt()
-    
     override fun sourceDuration(): Int? = player.duration.toInt()
     
     override fun isPause(): Boolean? = !player.isPlaying
@@ -174,6 +172,8 @@ class MyPlayerListener : PlayerListener {
     }
     
     override fun getVideoCodec(): String? = player.videoFormat?.codecs
+    override fun getSoftwareName(): String? = "software-name"
+    override fun getSoftwareVersion(): String? = "software-version"
 }
 ```
 
@@ -235,7 +235,7 @@ override fun onDestroy() {
 |-----------|------|----------|-------------|
 | `workspaceId` | String | ✅ | Your FastPix workspace identifier |
 | `viewerId` | String | ✅ | Unique identifier for the viewer |
-| `videoData` | VideoDataDetails | ✅ | Video metadata (see below) |
+| `videoData` | VideoDataDetails | ❌ | Video metadata (see below) |
 | `playerListener` | PlayerListener | ✅ | Interface implementation for player state |
 | `beaconUrl` | String | ❌ | Custom beacon URL (default: metrix.ws) |
 | `playerData` | PlayerDataDetails | ❌ | Player information |
@@ -263,8 +263,8 @@ override fun onDestroy() {
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `playerName` | String | ❌ | Player name (e.g., "ExoPlayer") |
-| `playerVersion` | String | ❌ | Player version |
+| `playerName` | String | ✅ | Player name (e.g., "ExoPlayer") |
+| `playerVersion` | String | ✅ | Player version |
 
 ### CustomDataDetails
 
