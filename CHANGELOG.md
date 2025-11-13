@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2]
+### Improved
+- **SDK Version Update**:
+- SDK Version Update
+
 ## [1.2.1]
 ### Improved
 - **Major Code Optimization and Refactoring**:

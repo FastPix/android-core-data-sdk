@@ -27,4 +27,6 @@ interface PlayerListener {
     fun getVideoCodec(): String?
     fun getSoftwareName(): String?
     fun getSoftwareVersion(): String?
+    fun getFastPixSDKName(): String?
+    fun getFastPixSDKVersion(): String?
 }
