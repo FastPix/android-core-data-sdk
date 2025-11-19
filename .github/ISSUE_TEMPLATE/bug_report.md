@@ -9,19 +9,62 @@ assignees: ''
 ## Bug Description
 A clear and concise description of what the bug is.
 
-## Steps to Reproduce
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Reproduction Steps
 
-## Expected Behavior
-A clear and concise description of what you expected to happen.
+1. **Setup Environment**
 
-## Actual Behavior
-A clear and concise description of what actually happened.
+```groovy
+dependencies {
+    implementation 'io.fastpix.data:media3:1.2.2'
+}
+```
 
-## Environment
+2. **Code To Reproduce**
+
+```kotlin
+ val config = SDKConfiguration(
+    workspaceId = "your-workspace-id",
+    beaconUrl = "custom.beacon.url", // Optional
+    // Optional
+    videoData = VideoDataDetails(
+        videoId = "video-123",
+        videoTitle = "My Awesome Video",
+        videoDuration = "300000", // in milliseconds
+        videoThumbnail = "https://example.com/thumbnail.jpg",
+        fpPlaybackId = "playback-id" // Optional FastPix playback ID
+        //.. etc
+    ),
+    // Optional
+    playerData = PlayerDataDetails(
+        playerName = "ExoPlayer",
+        playerVersion = "2.19.0"
+    ),
+    playerListener = MyPlayerListener(),
+    enableLogging = true, // Enable for debugging
+    // Optional
+    customData = CustomDataDetails(
+        customField1 = "custom-value-1",
+        customField2 = "custom-value-2"
+        //.. etc
+    )
+)
+
+// Initialize SDK
+fastPixSDK.initialize(config, applicationContext)
+```
+
+3. **Expected Behavior**
+```
+<!-- A clear and concise description of what you expected to happen.  -->
+```
+
+4. **Actual Behavior**
+```
+<!-- A clear and concise description of what actually happened. -->
+```
+
+5. **Environment**
+
 - **SDK Version**: [e.g., 1.2.2]
 - **Android Version**: [e.g., Android 12]
 - **Min SDK Version**: [e.g., 24]
