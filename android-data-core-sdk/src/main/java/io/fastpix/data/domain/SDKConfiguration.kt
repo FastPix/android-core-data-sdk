@@ -21,13 +21,5 @@ data class SDKConfiguration(
     init {
         // Validate mandatory parameters
         require(workspaceId.isNotBlank()) { "Workspace ID is mandatory and cannot be blank" }
-
-        // Validate video data (only videoId and videoTitle are mandatory)
-        require(videoData?.videoId?.isNotBlank() == true) {
-            "Video ID is mandatory and cannot be blank"
-        }
-        require(videoData.videoTitle?.isNotBlank() == true) {
-            "Video title is mandatory and cannot be blank"
-        }
     }
 }

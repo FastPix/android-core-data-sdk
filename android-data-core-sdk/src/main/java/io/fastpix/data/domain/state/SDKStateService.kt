@@ -52,7 +52,7 @@ class SDKStateService {
     /**
      * Update connection type in the SDK state
      */
-    fun updateConnectionType(connectionType: String) {
+    fun updateConnectionType(connectionType: String?) {
         _sdkState.value = _sdkState.value.copy(connectionType = connectionType)
     }
 

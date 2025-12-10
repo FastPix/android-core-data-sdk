@@ -35,6 +35,7 @@ class PulseEvent(
     @SerialName("vetldg") var viewTotalDownScaling: String? = null,
     @SerialName("vdsour") var videoSourceUrl: String? = null,
     @SerialName("vdsohn") var videoHostName: String? = null,
+    @SerialName("vdcn") var videoCDN: String? = null,
     @SerialName("evna") var eventName: String = "pulse"
 ) : BaseEvent(
     workSpaceId, viewId, viewSequenceNumber, playerSequenceNumber, beaconDomain,
@@ -60,6 +61,7 @@ class PulseEvent(
             "vetldg" to viewTotalDownScaling,
             "vdsour" to videoSourceUrl,
             "vdsohn" to videoHostName,
+            "vdcn" to videoCDN,
             "evna" to eventName
         )
     }
@@ -72,7 +74,7 @@ class PulseEvent(
             val sdkStateService = DependencyContainer.getSDKStateService()
             val eventDataCalculator = DependencyContainer.getEventDataCalculator()
             val sdkState = sdkStateService.sdkState.value
-            
+
             // Use configService.playerListener directly to avoid state synchronization issues
             // during rapid init/clear cycles
             val playerListener = configService.playerListener
@@ -119,8 +121,13 @@ class PulseEvent(
                 viewMaxDownScalePercentage = scalingTracker.getCurrentMaxDownscale().toString(),
                 viewTotalUpScaling = scalingTracker.getTotalUpscalingTimeWeighted().toString(),
                 viewTotalDownScaling = scalingTracker.getTotalDownscalingTimeWeighted().toString(),
-                videoSourceUrl = configService.videoData?.videoSourceUrl ?: configService.playerListener.sourceUrl(),
-                videoHostName = Utils.getDomain(configService.videoData?.videoSourceUrl ?: configService.playerListener.sourceUrl()),
+                videoSourceUrl = configService.videoData?.videoSourceUrl
+                    ?: configService.playerListener.sourceUrl(),
+                videoHostName = Utils.getDomain(
+                    configService.videoData?.videoSourceUrl
+                        ?: configService.playerListener.sourceUrl()
+                ),
+                videoCDN = configService.videoData?.videoCDN
             )
         }
     }

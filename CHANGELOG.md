@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.3]
+### Improved
+- **SDK Version Update**:
+- SDK Version Update
+- Improve Analytics
+- Improved Data
+
 ## [1.2.2]
 ### Improved
 - **SDK Version Update**:

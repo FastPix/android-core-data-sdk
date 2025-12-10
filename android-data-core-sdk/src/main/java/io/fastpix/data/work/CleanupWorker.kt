@@ -4,10 +4,11 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import io.fastpix.data.di.DependencyContainer
+import io.fastpix.data.domain.repository.EventDispatcher
 import io.fastpix.data.sdkBuild.SDKBuildConfig
 import io.fastpix.data.utils.Logger
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 /**
  * WorkManager Worker that handles cleanup of EventDispatcher

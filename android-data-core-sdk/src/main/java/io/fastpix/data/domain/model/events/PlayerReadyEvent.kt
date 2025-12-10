@@ -47,6 +47,9 @@ class PlayerReadyEvent(
             val baseData = getBaseEventData(configService)
             val playerInitTime = System.currentTimeMillis() - stateService.sdkState.value.viewBeginTime
             val playerListener = configService.playerListener
+            if (playerListener.isFullScreen() == true) {
+                stateService.updateFullScreenUsed()
+            }
             return PlayerReadyEvent(
                 workSpaceId = baseData["wsid"],
                 viewId = baseData["veid"],

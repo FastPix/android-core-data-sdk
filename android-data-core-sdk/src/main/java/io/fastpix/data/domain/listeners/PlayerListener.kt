@@ -16,6 +16,7 @@ interface PlayerListener {
     fun sourceDuration(): Int?
     fun isPause(): Boolean?
     fun isAutoPlay(): Boolean?
+    fun preLoad(): Boolean?
     fun isBuffering(): Boolean?
     fun playerCodec(): String?
     fun sourceHostName(): String?

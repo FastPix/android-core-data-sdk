@@ -3,6 +3,7 @@ package io.fastpix.data.lifecycle
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import io.fastpix.data.di.DependencyContainer
 import io.fastpix.data.domain.repository.EventDispatcher
 import io.fastpix.data.utils.Logger
 import kotlinx.coroutines.CoroutineScope

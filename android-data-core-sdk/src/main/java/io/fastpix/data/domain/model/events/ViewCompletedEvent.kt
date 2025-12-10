@@ -63,16 +63,15 @@ class ViewCompletedEvent(
         /**
          * Create a ViewCompletedEvent with all data populated
          */
-        fun createViewCompletedEvent(configService: SDKConfiguration): ViewCompletedEvent {
+        fun createViewCompletedEvent(
+            configService: SDKConfiguration,
+            playheadTimeOverride: Int? = null
+        ): ViewCompletedEvent {
             val sdkStateService = DependencyContainer.getSDKStateService()
             val eventDataCalculator = DependencyContainer.getEventDataCalculator()
             val baseData = getBaseEventData(configService)
-            
-            // Use configService.playerListener directly to avoid state synchronization issues
-            // during rapid init/clear cycles
-            val playerListener = configService.playerListener
-            val currentPlayheadTime = playerListener.playHeadTime() ?: 0
-            scalingTracker.calculateScalingForCurrentInterval(currentPlayheadTime.toLong())
+            val playheadTime = playheadTimeOverride?.toString() ?: baseData["plphti"]
+            scalingTracker.calculateScalingForCurrentInterval((playheadTime?.toLong() ?: 0))
 
             return ViewCompletedEvent(
                 workSpaceId = baseData["wsid"],
@@ -94,11 +93,16 @@ class ViewCompletedEvent(
                 viewMaxDownScalePercentage = scalingTracker.getCurrentMaxDownscale().toString(),
                 viewTotalUpScaling = scalingTracker.getTotalUpscalingTimeWeighted().toString(),
                 viewTotalDownScaling = scalingTracker.getTotalDownscalingTimeWeighted().toString(),
-                videoDuration = sdkStateService.sdkState.value.playerListener?.sourceDuration()?.toString(),
-                playerWidth = sdkStateService.sdkState.value.playerListener?.playerWidth()?.toString(),
-                playerHeight = sdkStateService.sdkState.value.playerListener?.playerHeight()?.toString(),
-                videoWidth = sdkStateService.sdkState.value.playerListener?.videoSourceWidth()?.toString(),
-                videoHeight = sdkStateService.sdkState.value.playerListener?.videoSourceHeight()?.toString(),
+                videoDuration = sdkStateService.sdkState.value.playerListener?.sourceDuration()
+                    ?.toString(),
+                playerWidth = sdkStateService.sdkState.value.playerListener?.playerWidth()
+                    ?.toString(),
+                playerHeight = sdkStateService.sdkState.value.playerListener?.playerHeight()
+                    ?.toString(),
+                videoWidth = sdkStateService.sdkState.value.playerListener?.videoSourceWidth()
+                    ?.toString(),
+                videoHeight = sdkStateService.sdkState.value.playerListener?.videoSourceHeight()
+                    ?.toString(),
             )
         }
     }

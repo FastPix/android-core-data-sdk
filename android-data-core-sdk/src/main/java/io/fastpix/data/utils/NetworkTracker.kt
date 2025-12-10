@@ -98,7 +98,7 @@ class NetworkTracker(
             capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true -> "wifi"
             capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true -> "mobile"
             capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true -> "ethernet"
-            else -> "other"
+            else -> null
         }
         
         // Update the SDK state with the new connection type

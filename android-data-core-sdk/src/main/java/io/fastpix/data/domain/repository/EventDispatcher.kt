@@ -87,7 +87,9 @@ class EventDispatcher(
             }
 
             else -> {
-                cancelPulseEvent()
+                if(eventData["evna"] != PlayerEventType.variantChanged.name){
+                    cancelPulseEvent()
+                }
                 addToQueue(eventData)
             }
         }
@@ -108,17 +110,25 @@ class EventDispatcher(
 
         dispatcherScope.launch {
             try {
-                val eventRequest = createEventRequest(listOf(eventData))
-                val response = eventApiService.sendEvents(eventRequest)
-                if (response.isSuccessful) {
-                    Logger.log("EventDispatcher", "viewBegin event dispatched successfully")
-                } else {
-                    Logger.logError(
-                        "EventDispatcher",
-                        "Failed to dispatch viewBegin event: ${response.code()}"
-                    )
-                    retryQueue.offer(eventData)
+                // Use NonCancellable to ensure the HTTP request completes even if scope is cancelled
+                withContext(NonCancellable) {
+                    val eventRequest = createEventRequest(listOf(eventData))
+                    val response = eventApiService.sendEvents(eventRequest)
+                    if (response.isSuccessful) {
+                        Logger.log("EventDispatcher", "viewBegin event dispatched successfully")
+                    } else {
+                        Logger.logError(
+                            "EventDispatcher",
+                            "Failed to dispatch viewBegin event: ${response.code()}"
+                        )
+                        retryQueue.offer(eventData)
+                    }
                 }
+            } catch (e: CancellationException) {
+                // If we get here, it means the request was cancelled before NonCancellable
+                // Add to retry queue so it can be sent later
+                Logger.logWarning("EventDispatcher", "viewBegin event cancelled, adding to retry queue")
+                retryQueue.offer(eventData)
             } catch (e: Exception) {
                 Logger.logError("EventDispatcher", "Exception dispatching viewBegin event", e)
                 retryQueue.offer(eventData)
@@ -249,6 +259,7 @@ class EventDispatcher(
 
     /**
      * Process all queues in priority order
+     * Uses NonCancellable to ensure ongoing dispatches complete even if scope is cancelled
      */
     private suspend fun processQueues() {
         if (isDispatching.get()) return
@@ -256,15 +267,18 @@ class EventDispatcher(
         isDispatching.set(true)
 
         try {
-            // First process retry queue
-            processRetryQueue()
+            // Use NonCancellable to ensure we complete processing even if scope is cancelled
+            // This is critical when switching videos - we don't want to lose events
+            withContext(NonCancellable) {
+                // First process retry queue
+                processRetryQueue()
 
-            // Then process overflow queue
-            processOverflowQueue()
+                // Then process overflow queue
+                processOverflowQueue()
 
-            // Finally process primary queue
-            processPrimaryQueue()
-
+                // Finally process primary queue
+                processPrimaryQueue()
+            }
         } finally {
             isDispatching.set(false)
         }
@@ -372,25 +386,30 @@ class EventDispatcher(
 
     /**
      * Dispatch a batch of events
+     * Uses NonCancellable context to ensure HTTP requests complete even if scope is cancelled
      */
     private suspend fun dispatchBatch(events: List<Map<String, String?>>): Boolean {
         if (events.isEmpty()) return true
 
         return try {
             Logger.log("EventDispatcher", "Dispatching batch of ${events.size} events")
-            val eventRequest = createEventRequest(events)
-            val response = eventApiService.sendEvents(eventRequest)
+            // Use NonCancellable to ensure the HTTP request completes even if scope is cancelled
+            // This is critical when switching videos - we don't want to lose events
+            withContext(NonCancellable) {
+                val eventRequest = createEventRequest(events)
+                val response = eventApiService.sendEvents(eventRequest)
 
-            if (response.isSuccessful) {
-                Logger.log("EventDispatcher", "Batch dispatched successfully")
-                true
-            } else {
-                Logger.logError("EventDispatcher", "Batch dispatch failed: ${response.code()}")
-                false
+                if (response.isSuccessful) {
+                    Logger.log("EventDispatcher", "Batch dispatched successfully")
+                    true
+                } else {
+                    Logger.logError("EventDispatcher", "Batch dispatch failed: ${response.code()}")
+                    false
+                }
             }
         } catch (e: CancellationException) {
-            // Handle cancellation gracefully - this is expected during cleanup
-            Logger.log("EventDispatcher", "Batch dispatch cancelled during cleanup")
+            // This should rarely happen now due to NonCancellable, but handle gracefully
+            Logger.logWarning("EventDispatcher", "Batch dispatch cancelled, events will be retried")
             false
         } catch (e: Exception) {
             Logger.logError("EventDispatcher", "Exception during batch dispatch", e)
@@ -583,29 +602,32 @@ class EventDispatcher(
     fun cleanup(onCleanUpDone: (() -> Unit)? = null) {
         Logger.log("EventDispatcher", "Starting cleanup process")
 
-        // Cancel all jobs first
+        // Stop scheduling new batch dispatches and pulse events
+        // But don't cancel immediately - let ongoing operations complete
         batchDispatchJob?.cancel()
         pulseJob?.cancel()
-        networkMonitorJob?.cancel()
+        // Keep network monitor running until flush completes
 
         // Flush all remaining events synchronously
+        // This will ensure all queued events are sent before cleanup
         try {
             dispatcherScope.launch {
                 withContext(NonCancellable) {
                     flushAllEvents {
-                        onCleanUpDone?.invoke()
-                        batchDispatchJob?.cancel()
-                        pulseJob?.cancel()
+                        // Now that flush is complete, cancel network monitor
                         networkMonitorJob?.cancel()
+                        onCleanUpDone?.invoke()
                     }
                 }
             }
         } catch (e: CancellationException) {
             // Handle cancellation gracefully during cleanup
             Logger.log("EventDispatcher", "Cleanup cancelled - this is expected")
+            networkMonitorJob?.cancel()
             onCleanUpDone?.invoke()
         } catch (e: Exception) {
             Logger.logError("EventDispatcher", "Error during flush in cleanup", e)
+            networkMonitorJob?.cancel()
             onCleanUpDone?.invoke()
         }
         Logger.log("EventDispatcher", "Cleanup completed")

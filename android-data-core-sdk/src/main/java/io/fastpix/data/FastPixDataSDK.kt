@@ -188,7 +188,7 @@ class FastPixDataSDK {
                 }
 
                 PlayerEventType.seeked -> {
-                    val seekedEvent = SeekedEvent.createSeekedEvent(config)
+                    val seekedEvent = SeekedEvent.createSeekedEvent(config, playheadTimeOverride)
                     eventDispatcher?.dispatchEvent(seekedEvent.toJson())
                 }
 
@@ -278,12 +278,16 @@ class FastPixDataSDK {
     /**
      * Reset the SDK (for testing purposes)
      */
-    fun release() {
-        releaseInternal()
+    fun release(playheadTimeOverride: Int? = null) {
+        playheadTimeOverride?.let {
+            releaseInternal(playheadTimeOverride)
+        } ?: run {
+            releaseInternal()
+        }
     }
 
     @Synchronized
-    private fun releaseInternal() {
+    private fun releaseInternal(playheadTimeOverride: Int? = null) {
         if (!isInitialized && configuration == null && pendingReleaseToken == null) {
             Logger.logWarning("FastPixDataSDK", "release() called before initialization")
             return
@@ -298,7 +302,7 @@ class FastPixDataSDK {
         val dispatcherToCleanup = eventDispatcher
 
         currentConfig?.let {
-            val viewCompletedEvent = ViewCompletedEvent.createViewCompletedEvent(it)
+            val viewCompletedEvent = ViewCompletedEvent.createViewCompletedEvent(it, playheadTimeOverride)
             dispatcherToCleanup?.dispatchEvent(viewCompletedEvent.toJson())
         }
 

@@ -61,6 +61,7 @@ class ViewBeginEvent(
     @SerialName("br") var applicationName: String? = null,
     @SerialName("brvn") var applicationVersion: String? = null,
     @SerialName("vddmty") var drmType: String? = null,
+    @SerialName("plpron") var preLoad: String? = null,
     @SerialName("cm1") var cm1: String? = null,
     @SerialName("cm2") var cm2: String? = null,
     @SerialName("cm3") var cm3: String? = null,
@@ -71,6 +72,7 @@ class ViewBeginEvent(
     @SerialName("cm8") var cm8: String? = null,
     @SerialName("cm9") var cm9: String? = null,
     @SerialName("cm10") var cm10: String? = null,
+    @SerialName("vdcn") var videoCDN: String? = null,
     @SerialName("evna") var eventName: String = "viewBegin"
 ) : BaseEvent(
     workSpaceId, viewId, viewSequenceNumber, playerSequenceNumber, beaconDomain,
@@ -121,6 +123,8 @@ class ViewBeginEvent(
             "br" to applicationName,
             "brvn" to applicationVersion,
             "vddmty" to drmType,
+            "vdcn" to videoCDN,
+            "plpron" to preLoad,
             "cm1" to cm1,
             "cm2" to cm2,
             "cm3" to cm3,
@@ -147,7 +151,9 @@ class ViewBeginEvent(
             sdkStateService.viewSequenceNumber()
             sdkStateService.playerSequenceNumber()
             val playerListener = configService.playerListener
-
+            if (playerListener.isFullScreen() == true) {
+                sdkStateService.updateFullScreenUsed()
+            }
             return ViewBeginEvent(
                 workSpaceId = baseData["wsid"],
                 viewId = baseData["veid"],
@@ -203,6 +209,8 @@ class ViewBeginEvent(
                 applicationName = deviceInfoUtility.getBrowser(),
                 applicationVersion = deviceInfoUtility.getBrowserVersion(),
                 drmType = configService.videoData?.videoDrmType,
+                videoCDN = configService.videoData?.videoCDN,
+                preLoad = configService.playerListener.preLoad().toString(),
                 cm1 = configService.customData?.customField1,
                 cm2 = configService.customData?.customField2,
                 cm3 = configService.customData?.customField3,

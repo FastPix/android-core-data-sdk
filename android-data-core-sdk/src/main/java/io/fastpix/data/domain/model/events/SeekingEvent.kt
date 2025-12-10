@@ -53,13 +53,7 @@ class SeekingEvent(
             val baseData = getBaseEventData(configService)
             eventDataCalculator.onSeekingEvent()
             val playheadTime = playheadTimeOverride?.toString() ?: baseData["plphti"]
-            
-            // Use configService.playerListener directly to avoid state synchronization issues
-            // during rapid init/clear cycles
             val playerListener = configService.playerListener
-            
-            // Phase 2: Scaling Calculation - Calculate scaling for current interval
-            // Only calculates if valid interval data exists, does NOT reset time references
             val currentPlayheadTime = playheadTimeOverride ?: playerListener.playHeadTime() ?: 0
             scalingTracker.calculateScalingForCurrentInterval(currentPlayheadTime.toLong())
             return SeekingEvent(

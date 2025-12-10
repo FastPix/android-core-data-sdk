@@ -61,6 +61,10 @@ class PlayEvent(
             val sdkStateService = DependencyContainer.getSDKStateService()
             val eventDataCalculator = DependencyContainer.getEventDataCalculator()
             val baseData = getBaseEventData(configService)
+            val playerListener = configService.playerListener
+            if (playerListener.isFullScreen() == true) {
+                sdkStateService.updateFullScreenUsed()
+            }
             return PlayEvent(
                 workSpaceId = baseData["wsid"],
                 viewId = baseData["veid"],

@@ -42,17 +42,21 @@ class SeekedEvent(
          * Create a SeekedEvent with all data populated
          * This is equivalent to the Dart createSeekedEvent method
          */
-        fun createSeekedEvent(configService: SDKConfiguration): SeekedEvent {
+        fun createSeekedEvent(
+            configService: SDKConfiguration,
+            playheadTimeOverride: Int? = null
+        ): SeekedEvent {
             val sdkStateService = DependencyContainer.getSDKStateService()
             val eventDataCalculator = DependencyContainer.getEventDataCalculator()
             val playerListener = sdkStateService.sdkState.value.playerListener
-//            if(playerListener?.isPause() == true){
-//                ViewWatchCounter.pause()
-//            } else {
-//                ViewWatchCounter.start()
-//            }
+            if (playerListener?.isPause() == true) {
+                ViewWatchCounter.pause()
+            } else {
+                ViewWatchCounter.start()
+            }
             val baseData = getBaseEventData(configService)
             eventDataCalculator.onSeekedEvent()
+            val playheadTime = playheadTimeOverride?.toString() ?: baseData["plphti"]
             val seekDuration = eventDataCalculator.calculateTotalSeekDuration()
             val seekCount = eventDataCalculator.calculateSeekCount()
             return SeekedEvent(
@@ -61,7 +65,7 @@ class SeekedEvent(
                 viewSequenceNumber = baseData["vesqnu"],
                 playerSequenceNumber = baseData["plsqnu"],
                 beaconDomain = baseData["bedn"],
-                playheadTime = baseData["plphti"],
+                playheadTime = playheadTime,
                 viewerTimeStamp = baseData["vitp"],
                 playerInstanceId = baseData["plinid"],
                 viewWatchTime = baseData["vewati"],
