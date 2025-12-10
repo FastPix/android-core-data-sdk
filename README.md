@@ -1,7 +1,7 @@
 # FastPix Android Data Core SDK
 
 [![License](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.2.4-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.5-green.svg)](CHANGELOG.md)
 [![Min SDK](https://img.shields.io/badge/minSdk-24-orange.svg)](build.gradle.kts)
 
 The FastPix Android Data Core SDK serves as the foundational layer for integrating video playback
@@ -56,7 +56,7 @@ Add the dependency to your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("io.fastpix.data:core:1.2.4")
+    implementation("io.fastpix.data:core:1.2.5")
 }
 ```
 
@@ -197,8 +197,6 @@ class MyPlayerListener : PlayerListener {
     override fun getVideoCodec(): String? = player.videoFormat?.codecs
     override fun getSoftwareName(): String? = "software-name"
     override fun getSoftwareVersion(): String? = "software-version"
-    override fun getFastPixSDKName(): String? = "sdk-name"
-    override fun getFastPixSDKVersion(): String? = "sdk-version"
 }
 ```
 

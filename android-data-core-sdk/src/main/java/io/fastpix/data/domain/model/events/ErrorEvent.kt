@@ -193,8 +193,8 @@ class ErrorEvent(
                 softwareVersion = playerListener.getSoftwareVersion(),
                 osName = deviceInfoUtility.getOSName(),
                 osVersion = deviceInfoUtility.getOSVersion(),
-                fpSDKName = playerListener.getFastPixSDKName(),
-                fpSDKVersion = playerListener.getFastPixSDKVersion(),
+                fpSDKName = SDKBuildConfig.SDK_NAME,
+                fpSDKVersion = SDKBuildConfig.SDK_VERSION,
                 streamType = if (playerListener.isLive() == true) "live" else "on-demand",
                 videoHostName = Utils.getDomain(
                     configService.videoData?.videoSourceUrl ?: playerListener.sourceUrl()

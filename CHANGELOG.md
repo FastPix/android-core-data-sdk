@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.2.5]
+### Improved
+- **SDK Version Update**:
+- SDK Version Update
+- Bug Fix
+
 ## [1.2.4]
 ### Improved
 - **SDK Version Update**:
