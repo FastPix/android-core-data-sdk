@@ -1,0 +1,170 @@
+package io.fastpix.data.domain.model.events
+
+import io.fastpix.data.domain.SDKConfiguration
+import io.fastpix.data.domain.state.SessionService
+import io.fastpix.data.utils.Utils
+import io.fastpix.data.sdkBuild.SDKBuildConfig
+import io.fastpix.data.di.DependencyContainer
+import io.fastpix.data.scalingTracker
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+class ErrorEvent(
+    @SerialName("wsid") override var workSpaceId: String? = null,
+    @SerialName("veid") override var viewId: String? = null,
+    @SerialName("vesqnu") override var viewSequenceNumber: String? = null,
+    @SerialName("plsqnu") override var playerSequenceNumber: Int? = null,
+    @SerialName("bedn") override var beaconDomain: String? = null,
+    @SerialName("plphti") override var playheadTime: Int? = null,
+    @SerialName("vitp") override var viewerTimeStamp: Long? = null,
+    @SerialName("plinid") override var playerInstanceId: String? = null,
+    @SerialName("vewati") override var viewWatchTime: String? = null,
+    @SerialName("vicity") override var connectionType: String? = null,
+    @SerialName("evna") override var eventName: String? = null,
+    @SerialName("plisfl") override var isPlayerFullScreen: String? = null,
+    @SerialName("snid") var sessionId: String? = null,
+    @SerialName("snst") var sessionStart: String? = null,
+    @SerialName("vdsour") var videoSourceUrl: String? = null,
+    @SerialName("snepti") var sessionExpires: String? = null,
+    @SerialName("fpviid") var fpViewerId: String? = null,
+    @SerialName("vdtt") var videoTitle: String? = null,
+    @SerialName("vdid") var videoId: String? = null,
+    @SerialName("plna") var playerName: String? = null,
+    @SerialName("dena") var deviceName: String? = null,
+    @SerialName("decg") var deviceCategory: String? = null,
+    @SerialName("demr") var deviceManufacturer: String? = null,
+    @SerialName("demo") var deviceModel: String? = null,
+    @SerialName("plvn") var playerVersion: String? = null,
+    @SerialName("plwt") var playerWidth: String? = null,
+    @SerialName("plht") var playerHeight: String? = null,
+    @SerialName("rqvdwt") var videoWidth: String? = null,
+    @SerialName("rqvdht") var videoHeight: String? = null,
+    @SerialName("plswna") var softwareName: String? = null,
+    @SerialName("plswvn") var softwareVersion: String? = null,
+    @SerialName("osna") var osName: String? = null,
+    @SerialName("osvn") var osVersion: String? = null,
+    @SerialName("plfpsdna") var fpSDKName: String? = null,
+    @SerialName("plfpsdvn") var fpSDKVersion: String? = null,
+    @SerialName("vdsmty") var streamType: String? = null,
+    @SerialName("vdsohn") var videoHostName: String? = null,
+    @SerialName("plauon") var autoPlay: String? = null,
+    @SerialName("vesnid") var viewSessionId: String? = null,
+    @SerialName("vdsomity") var mimeType: String? = null,
+    @SerialName("fpaivn") var fastPixApiVersion: String? = null,
+    @SerialName("vdsocc") var videoCodec: String? = null,
+    @SerialName("vdlncd") var videoLanguage: String? = null,
+    @SerialName("vdsodu") var videoDuration: String? = null,
+    @SerialName("vdpour") var videoThumbnail: String? = null,
+    @SerialName("vdsr") var videoSeries: String? = null,
+    @SerialName("vdpd") var videoProducer: String? = null,
+    @SerialName("vdctty") var videoContentType: String? = null,
+    @SerialName("vdvana") var videoVariant: String? = null,
+    @SerialName("plercd") var playerErrorCode: String? = null,
+    @SerialName("plerms") var playerErrorMessage: String? = null,
+    @SerialName("br") var applicationName: String? = null,
+    @SerialName("brvn") var applicationVersion: String? = null,
+    @SerialName("vetlctpbti") var viewTotalContentPlayBackTime: String? = null,
+    @SerialName("vemauppg") var viewMaxUpScalePercentage: Double? = null,
+    @SerialName("vemadopg") var viewMaxDownScalePercentage: Double? = null,
+    @SerialName("vetlug") var viewTotalUpScaling: Double? = null,
+    @SerialName("vetldg") var viewTotalDownScaling: Double? = null,
+    @SerialName("vddmty") var drmType: String? = null,
+    @SerialName("cm1") var cm1: String? = null,
+    @SerialName("cm2") var cm2: String? = null,
+    @SerialName("cm3") var cm3: String? = null,
+    @SerialName("cm4") var cm4: String? = null,
+    @SerialName("cm5") var cm5: String? = null,
+    @SerialName("cm6") var cm6: String? = null,
+    @SerialName("cm7") var cm7: String? = null,
+    @SerialName("cm8") var cm8: String? = null,
+    @SerialName("cm9") var cm9: String? = null,
+    @SerialName("cm10") var cm10: String? = null,
+) : BaseEvent()
+
+
+object ErrorEventBuilder {
+
+    fun build(configService: SDKConfiguration): ErrorEvent {
+        val deviceInfoUtility = DependencyContainer.getDeviceInfoUtility()
+        val base = BaseEventFactory.create(configService)
+        val playerListener = configService.playerListener
+        val currentPlayheadTime = playerListener.playHeadTime() ?: 0
+        scalingTracker.calculateScalingForCurrentInterval(currentPlayheadTime.toLong())
+
+        return ErrorEvent(
+            workSpaceId = base.workSpaceId,
+            viewId = base.viewId,
+            viewSequenceNumber = base.viewSequenceNumber,
+            playerSequenceNumber = base.playerSequenceNumber,
+            beaconDomain = base.beaconDomain,
+            playheadTime = base.playheadTime,
+            viewerTimeStamp = base.viewerTimeStamp,
+            playerInstanceId = base.playerInstanceId,
+            viewWatchTime = base.viewWatchTime,
+            connectionType = base.connectionType,
+            isPlayerFullScreen = base.isPlayerFullScreen,
+            sessionId = SessionService.getSessionId(),
+            sessionStart = SessionService.getSessionStartTime()?.toString(),
+            videoSourceUrl = configService.videoData?.videoSourceUrl
+                ?: playerListener.sourceUrl(),
+            sessionExpires = SessionService.getSessionExpireTime()?.toString(),
+            fpViewerId = DependencyContainer.getViewerPref()?.getViewerId(),
+            videoTitle = configService.videoData?.videoTitle,
+            videoId = configService.videoData?.videoId,
+            playerName = configService.playerData?.playerName,
+            deviceName = deviceInfoUtility.getDeviceName(),
+            deviceCategory = deviceInfoUtility.getDeviceCategory(),
+            deviceManufacturer = deviceInfoUtility.getDeviceManufacturer(),
+            deviceModel = deviceInfoUtility.getDeviceModel(),
+            playerVersion = configService.playerData?.playerVersion,
+            playerWidth = playerListener.playerWidth()?.toString(),
+            playerHeight = playerListener.playerHeight()?.toString(),
+            videoWidth = playerListener.videoSourceWidth()?.toString(),
+            videoHeight = playerListener.videoSourceHeight()?.toString(),
+            softwareName = playerListener.getSoftwareName(),
+            softwareVersion = playerListener.getSoftwareVersion(),
+            osName = deviceInfoUtility.getOSName(),
+            osVersion = deviceInfoUtility.getOSVersion(),
+            fpSDKName = SDKBuildConfig.SDK_NAME,
+            fpSDKVersion = SDKBuildConfig.SDK_VERSION,
+            streamType = if (playerListener.isLive() == true) "live" else "on-demand",
+            videoHostName = Utils.getDomain(
+                configService.videoData?.videoSourceUrl ?: playerListener.sourceUrl()
+            ),
+            autoPlay = playerListener.isAutoPlay()?.toString(),
+            viewSessionId = SessionService.getSessionId(),
+            mimeType = playerListener.mimeType()?.lowercase(),
+            fastPixApiVersion = "1.0",
+            videoCodec = playerListener.playerCodec(),
+            videoLanguage = configService.videoData?.videoLanguage,
+            videoDuration = configService.videoData?.videoDuration,
+            videoThumbnail = configService.videoData?.videoThumbnail,
+            videoSeries = configService.videoData?.videoSeries,
+            videoVariant = configService.videoData?.videoVariant,
+            videoProducer = configService.videoData?.videoProducer,
+            videoContentType = configService.videoData?.videoContentType,
+            playerErrorCode = playerListener.getPlayerError().errorCode,
+            playerErrorMessage = playerListener.getPlayerError().errorMessage,
+            applicationName = deviceInfoUtility.getBrowser(),
+            applicationVersion = deviceInfoUtility.getBrowserVersion(),
+            viewTotalContentPlayBackTime = scalingTracker.getTotalPlaybackTime().toString(),
+            viewMaxUpScalePercentage = scalingTracker.getCurrentMaxUpscale(),
+            viewMaxDownScalePercentage = scalingTracker.getCurrentMaxDownscale(),
+            viewTotalUpScaling = scalingTracker.getTotalUpscalingTimeWeighted(),
+            viewTotalDownScaling = scalingTracker.getTotalDownscalingTimeWeighted(),
+            drmType = configService.videoData?.videoDrmType,
+            eventName = "error",
+            cm1 = configService.customData?.customField1,
+            cm2 = configService.customData?.customField2,
+            cm3 = configService.customData?.customField3,
+            cm4 = configService.customData?.customField4,
+            cm5 = configService.customData?.customField5,
+            cm6 = configService.customData?.customField6,
+            cm7 = configService.customData?.customField7,
+            cm8 = configService.customData?.customField8,
+            cm9 = configService.customData?.customField9,
+            cm10 = configService.customData?.customField10
+        )
+    }
+}
