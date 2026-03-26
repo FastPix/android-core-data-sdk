@@ -1,20 +1,32 @@
 package io.fastpix.data.utils
 
 import android.util.Log
+import io.fastpix.data.domain.state.SessionService
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class Logger private constructor() {
 
     companion object {
-        private const val TAG = "FastPixSDK"
+        private const val TAG = "FastPixAnalytics"
         private var isLoggingEnabled = false
+        private val timeFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US)
         
         /**
-         * Enable logging for the SDK
+         * Configure logging. Logs are emitted only for debug builds.
+         */
+        fun configure(enable: Boolean) {
+            isLoggingEnabled = enable
+        }
+
+        /**
+         * Enable logging for backward compatibility.
          */
         fun enableLogging() {
-            isLoggingEnabled = true
+            configure(true)
         }
-        
+
         /**
          * Disable logging for the SDK
          */
@@ -32,7 +44,7 @@ class Logger private constructor() {
          */
         fun log(message: String) {
             if (isLoggingEnabled) {
-                Log.d(TAG, message)
+                Log.d(TAG, formatMessage("DEBUG", TAG, message, null, null, null))
             }
         }
         
@@ -44,13 +56,28 @@ class Logger private constructor() {
                 Log.d(tag, message)
             }
         }
+
+        fun log(
+            tag: String,
+            message: String,
+            sessionId: String? = null,
+            videoId: String? = null,
+            playerInstanceId: String? = null
+        ) {
+            if (isLoggingEnabled) {
+                Log.d(
+                    TAG,
+                    formatMessage("DEBUG", tag, message, sessionId, videoId, playerInstanceId)
+                )
+            }
+        }
         
         /**
          * Log an error message
          */
         fun logError(message: String, throwable: Throwable? = null) {
             if (isLoggingEnabled) {
-                Log.e(TAG, message, throwable)
+                Log.e(TAG, formatMessage("ERROR", TAG, message, null, null, null), throwable)
             }
         }
         
@@ -59,7 +86,24 @@ class Logger private constructor() {
          */
         fun logError(tag: String, message: String, throwable: Throwable? = null) {
             if (isLoggingEnabled) {
-                Log.e(tag, message, throwable)
+                Log.e(TAG, formatMessage("ERROR", tag, message, null, null, null), throwable)
+            }
+        }
+
+        fun logError(
+            tag: String,
+            message: String,
+            sessionId: String? = null,
+            videoId: String? = null,
+            playerInstanceId: String? = null,
+            throwable: Throwable? = null
+        ) {
+            if (isLoggingEnabled) {
+                Log.e(
+                    TAG,
+                    formatMessage("ERROR", tag, message, sessionId, videoId, playerInstanceId),
+                    throwable
+                )
             }
         }
         
@@ -68,7 +112,7 @@ class Logger private constructor() {
          */
         fun logInfo(message: String) {
             if (isLoggingEnabled) {
-                Log.i(TAG, message)
+                Log.i(TAG, formatMessage("INFO", TAG, message, null, null, null))
             }
         }
         
@@ -77,7 +121,22 @@ class Logger private constructor() {
          */
         fun logInfo(tag: String, message: String) {
             if (isLoggingEnabled) {
-                Log.i(tag, message)
+                Log.i(TAG, formatMessage("INFO", tag, message, null, null, null))
+            }
+        }
+
+        fun logInfo(
+            tag: String,
+            message: String,
+            sessionId: String? = null,
+            videoId: String? = null,
+            playerInstanceId: String? = null
+        ) {
+            if (isLoggingEnabled) {
+                Log.i(
+                    TAG,
+                    formatMessage("INFO", tag, message, sessionId, videoId, playerInstanceId)
+                )
             }
         }
         
@@ -86,7 +145,7 @@ class Logger private constructor() {
          */
         fun logWarning(message: String) {
             if (isLoggingEnabled) {
-                Log.w(TAG, message)
+                Log.w(TAG, formatMessage("WARN", TAG, message, null, null, null))
             }
         }
         
@@ -95,8 +154,46 @@ class Logger private constructor() {
          */
         fun logWarning(tag: String, message: String) {
             if (isLoggingEnabled) {
-                Log.w(tag, message)
+                Log.w(TAG, formatMessage("WARN", tag, message, null, null, null))
             }
         }
+
+        fun logWarning(
+            tag: String,
+            message: String,
+            sessionId: String? = null,
+            videoId: String? = null,
+            playerInstanceId: String? = null
+        ) {
+            if (isLoggingEnabled) {
+                Log.w(
+                    TAG,
+                    formatMessage("WARN", tag, message, sessionId, videoId, playerInstanceId)
+                )
+            }
+        }
+
+        private fun formatMessage(
+            level: String,
+            tag: String,
+            message: String,
+            sessionId: String?,
+            videoId: String?,
+            playerInstanceId: String?
+        ): String {
+            val resolvedSessionId = sessionId ?: SessionService.getSessionId()
+            val traceId = SessionService.getTraceId()
+            return "ts=${timeFormatter.format(Date())} level=$level tag=$tag thread=${Thread.currentThread().name} traceId=${traceId ?: "none"} sessionId=${resolvedSessionId ?: "none"} videoId=${videoId ?: "none"} playerInstanceId=${playerInstanceId ?: "none"} msg=$message"
+        }
+
+        // --- Pipeline / lifecycle debug labels (use with log(tag, "LABEL: ...")) ---
+        const val EVENT_ENQUEUED = "EVENT_ENQUEUED"
+        const val EVENT_BATCHED = "EVENT_BATCHED"
+        const val EVENT_SENT = "EVENT_SENT"
+        const val EVENT_RETRY = "EVENT_RETRY"
+        const val EVENT_DROPPED = "EVENT_DROPPED"
+        const val SDK_INITIALIZED = "SDK_INITIALIZED"
+        const val SDK_RELEASE_STARTED = "SDK_RELEASE_STARTED"
+        const val SDK_RELEASE_COMPLETED = "SDK_RELEASE_COMPLETED"
     }
 }

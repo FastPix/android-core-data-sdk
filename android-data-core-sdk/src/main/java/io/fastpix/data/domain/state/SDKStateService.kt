@@ -48,8 +48,8 @@ class SDKStateService {
             videoDataDetails = config.videoData,
             playerListener = config.playerListener,
             workSpaceId = config.workspaceId,
-            beaconUrl = if (config.beaconUrl?.isEmpty() == true) "metrix.ws" else config.beaconUrl,
-            baseUrl = "https://${config.workspaceId}.${if (config.beaconUrl?.isEmpty() == true) "metrix.ws" else config.beaconUrl}"
+            beaconUrl = if (config.beaconUrl?.isEmpty() == true) "anlytix.io" else config.beaconUrl,
+            baseUrl = "https://${config.workspaceId}.${if (config.beaconUrl?.isEmpty() == true) "anlytix.io" else config.beaconUrl}"
         )
     }
 

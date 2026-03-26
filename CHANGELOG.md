@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.7]
+## Changed
+- Replaced the manual event cleanup logic with a Room-based persistence layer and WorkManager-driven upload pipeline.
+- Added `AnalyticsDatabase`, `EventStore`, and associated DAOs/Entities to handle persistent event storage.
+- Introduced `EventQueue` for thread-safe in-memory event buffering.
+- Implemented `EventUploadWorker` and `EventUploadScheduler` to manage reliable background data synchronization.
+- Updated `FastPixAnalytics` and `FastPixDataSDK` to use a new lifecycle-aware state machine (`SdkLifecycleState`).
+- Refactored `EventDispatcher` to orchestrate the flow from the in-memory queue to the persistent store and network.
+- Updated the default beacon domain from `metrix.ws` to `anlytix.io`.
+- Enhanced the `Logger` utility with structured formatting, session/trace tracking, and standardized event labels.
+- Updated dependencies for Room, KSP, and Kotlin serialization.
 
 ## [1.2.6]
 ### Improved

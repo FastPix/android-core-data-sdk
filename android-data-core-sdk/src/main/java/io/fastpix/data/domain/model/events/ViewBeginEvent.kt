@@ -84,8 +84,6 @@ object ViewBeginEventBuilder {
         val deviceInfoUtility = DependencyContainer.getDeviceInfoUtility()
         val base = BaseEventFactory.create(configService)
         sdkStateService.updateViewBeginTime()
-        sdkStateService.viewSequenceNumber()
-        sdkStateService.playerSequenceNumber()
         val playerListener = configService.playerListener
         return ViewBeginEvent(
             workSpaceId = base.workSpaceId,

@@ -1,0 +1,108 @@
+package io.fastpix.data.work
+
+import android.content.Context
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import io.fastpix.data.di.DependencyContainer
+import io.fastpix.data.domain.model.EventRequest
+import io.fastpix.data.domain.model.Metadata
+import io.fastpix.data.sdkBuild.SDKBuildConfig
+import io.fastpix.data.utils.Logger
+import kotlinx.coroutines.CancellationException
+
+class EventUploadWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    companion object {
+        private const val MAX_BATCH_SIZE = 50
+    }
+
+    override suspend fun doWork(): Result {
+        return try {
+            Logger.log(
+                "EventUploadWorker",
+                "WORK_START: workId=$id attempt=$runAttemptCount"
+            )
+            ensureContainerReady()
+            val eventStore = DependencyContainer.getEventStore()
+            val apiService = DependencyContainer.getEventApiService()
+
+            val completedSessions = eventStore.getCompletedSessions()
+            if (completedSessions.isEmpty()) {
+                Logger.log("EventUploadWorker", "No completed sessions to upload")
+                return Result.success()
+            }
+            Logger.log("EventUploadWorker", "UPLOAD_SCAN: completedSessions=${completedSessions.size}")
+
+            for (session in completedSessions) {
+                Logger.log(
+                    "EventUploadWorker",
+                    "SESSION_UPLOAD_START: sessionId=${session.sessionId} viewId=${session.viewId}"
+                )
+                while (true) {
+                    val events = eventStore.loadSessionEvents(session.sessionId, MAX_BATCH_SIZE)
+                    if (events.isEmpty()) {
+                        eventStore.deleteSessionIfEmpty(session.sessionId)
+                        Logger.log(
+                            "EventUploadWorker",
+                            "SESSION_UPLOAD_DONE: sessionId=${session.sessionId} noMoreEvents=true"
+                        )
+                        break
+                    }
+
+                    val request = EventRequest(
+                        metadata = Metadata(transmission_timestamp = System.currentTimeMillis()),
+                        events = events.map { it.second }
+                    )
+                    Logger.log(
+                        "EventUploadWorker",
+                        "NETWORK_REQUEST_START: sessionId=${session.sessionId} batchSize=${events.size}"
+                    )
+
+                    val response = apiService.sendEvents(request)
+                    Logger.log(
+                        "EventUploadWorker",
+                        "NETWORK_REQUEST_COMPLETE: sessionId=${session.sessionId} code=${response.code()} success=${response.isSuccessful}"
+                    )
+                    if (!response.isSuccessful) {
+                        Logger.logWarning(
+                            "EventUploadWorker",
+                            "Upload failed for session=${session.sessionId}, viewId=${session.viewId}, code=${response.code()}"
+                        )
+                        return Result.retry()
+                    }
+
+                    eventStore.deleteUploadedEvents(events.map { it.first })
+                    eventStore.deleteSessionIfEmpty(session.sessionId)
+                }
+            }
+
+            Logger.log("EventUploadWorker", "WORK_COMPLETE: workId=$id result=success")
+            Result.success()
+        } catch (ce: CancellationException) {
+            Logger.logWarning("EventUploadWorker", "WORK_CANCELLED: workId=$id reason=${ce.message}")
+            throw ce
+        } catch (e: Exception) {
+            Logger.logError("EventUploadWorker", "Upload worker failed: ${e.message}", e)
+            Result.retry()
+        }
+    }
+
+    private fun ensureContainerReady() {
+        try {
+            DependencyContainer.getContext()
+        } catch (_: IllegalStateException) {
+            DependencyContainer.initialize(applicationContext)
+        }
+
+        if (SDKBuildConfig.SDK_URL.isBlank()) {
+            val savedSdkUrl = DependencyContainer.getViewerPref()?.getSdkUrl()
+            if (!savedSdkUrl.isNullOrBlank()) {
+                SDKBuildConfig.SDK_URL = savedSdkUrl
+            }
+        }
+    }
+
+}

@@ -91,7 +91,7 @@ object BaseEventFactory {
             viewId = viewId,
             viewSequenceNumber = sequenceNumber.toString(),
             playerSequenceNumber = playerSequenceNumber,
-            beaconDomain = configService.beaconUrl ?: "metrix.ws",
+            beaconDomain = configService.beaconUrl ?: "anlytix.io",
             playheadTime = playHeadTime,
             viewerTimeStamp = currentTimeStamp,
             playerInstanceId = playerId,

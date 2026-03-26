@@ -2,11 +2,13 @@ package io.fastpix.data.domain.state
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import io.fastpix.data.utils.Logger
 import java.util.UUID
 
 object SessionService {
 
     private var sessionId: String? = null
+    private var traceId: String? = null
     private var sessionStartTime: Long? = null
     private var lastEventTime: Long? = null
     private var isSessionValid: Boolean = false
@@ -22,6 +24,7 @@ object SessionService {
     fun initializeSession() {
         val currentTime = System.currentTimeMillis()
         sessionId = UUID.randomUUID().toString()
+        traceId = UUID.randomUUID().toString().substring(0, 8)
         sessionStartTime = currentTime
         sessionExpiryTime = currentTime + SESSION_TIMEOUT_MS
         lastEventTime = currentTime
@@ -43,6 +46,7 @@ object SessionService {
             invalidateSession()
             return false
         }
+        lastEventTime = currentTime
         return true
     }
 
@@ -52,6 +56,7 @@ object SessionService {
     private fun invalidateSession() {
         isSessionValid = false
         sessionId = null
+        traceId = null
         _sessionState.postValue(false)
     }
 
@@ -61,12 +66,14 @@ object SessionService {
     fun reset() {
         isSessionValid = false
         sessionId = null
+        traceId = null
         sessionStartTime = null
         lastEventTime = null
         _sessionState.postValue(false)
     }
 
     fun getSessionId(): String? = sessionId
+    fun getTraceId(): String? = traceId
     fun getSessionStartTime(): Long? = sessionStartTime
     fun getLastEventTime(): Long? = lastEventTime
     fun getSessionExpireTime(): Long? = sessionExpiryTime

@@ -2,6 +2,7 @@ package io.fastpix.data.di
 
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.room.Room
 import io.fastpix.data.domain.calculator.EventDataCalculator
 import io.fastpix.data.domain.repository.EventApiService
 import io.fastpix.data.domain.repository.EventDispatcher
@@ -23,6 +24,8 @@ import io.fastpix.data.pref.EventPersistenceManager
 import io.fastpix.data.pref.ViewerPrefs
 import io.fastpix.data.scalingTracker
 import io.fastpix.data.sdkBuild.SDKBuildConfig
+import io.fastpix.data.storage.AnalyticsDatabase
+import io.fastpix.data.storage.EventStore
 import okhttp3.Interceptor
 
 /**
@@ -46,6 +49,8 @@ object DependencyContainer {
     private var _eventPersistenceManager: EventPersistenceManager? = null
     private var _eventDataCalculator: EventDataCalculator? = null
     private var _deviceInfoUtility: DeviceInfoUtility? = null
+    private var _analyticsDatabase: AnalyticsDatabase? = null
+    private var _eventStore: EventStore? = null
 
     /**
      * Initialize the dependency container with application context
@@ -122,6 +127,24 @@ object DependencyContainer {
             _eventPersistenceManager = EventPersistenceManager(getContext())
         }
         return _eventPersistenceManager!!
+    }
+
+    fun getAnalyticsDatabase(): AnalyticsDatabase {
+        if (_analyticsDatabase == null) {
+            _analyticsDatabase = Room.databaseBuilder(
+                getContext(),
+                AnalyticsDatabase::class.java,
+                "fastpix_analytics.db"
+            ).build()
+        }
+        return _analyticsDatabase!!
+    }
+
+    fun getEventStore(): EventStore {
+        if (_eventStore == null) {
+            _eventStore = EventStore(getAnalyticsDatabase(), getEventPersistenceManager())
+        }
+        return _eventStore!!
     }
 
     /**
@@ -232,6 +255,8 @@ object DependencyContainer {
         _eventDataCalculator = null
         _sdkStateService?.clearSdkState()
         _sdkStateService = null
+        _eventDispatcher = null
+        _eventStore = null
         SessionService.reset()
         scalingTracker.reset()
         Logger.log("DependencyContainer", "Prepared for release - instances cleared")
@@ -245,6 +270,7 @@ object DependencyContainer {
         _sdkStateService?.clearSdkState()
         ViewWatchCounter.destroy()
         SessionService.reset()
+        _analyticsDatabase?.close()
         _okHttpClient = null
         _retrofit = null
         _eventApiService = null
@@ -254,6 +280,8 @@ object DependencyContainer {
         _eventDataCalculator = null
         _deviceInfoUtility = null
         _eventPersistenceManager = null
+        _analyticsDatabase = null
+        _eventStore = null
         context = null
         isInitialized = false
         Logger.log("DependencyContainer", "Reset completed")

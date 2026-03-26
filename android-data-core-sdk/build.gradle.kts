@@ -4,7 +4,8 @@ import kotlin.apply
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    kotlin("plugin.serialization") version "2.2.0"
+    alias(libs.plugins.kotlin.serialization)
+    id("com.google.devtools.ksp")
     id("maven-publish")
 }
 
@@ -37,6 +38,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -63,6 +68,11 @@ dependencies {
 
     // WorkManager
     api(libs.androidx.work.runtime.ktx)
+
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 }
 
 val localProperties = Properties().apply {
@@ -77,7 +87,7 @@ publishing {
         create<MavenPublication>("bar") {
             groupId = "io.fastpix.data"
             artifactId = "core"
-            version = "1.2.6"
+            version = "1.2.7"
             artifact("${buildDir}/outputs/aar/android-data-core-sdk-release.aar")
 
             pom.withXml {

@@ -1,7 +1,7 @@
 # FastPix Android Data Core SDK
 
 [![License](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.2.6-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.7-green.svg)](CHANGELOG.md)
 [![Min SDK](https://img.shields.io/badge/minSdk-24-orange.svg)](build.gradle.kts)
 
 The FastPix Android Data Core SDK serves as the foundational layer for integrating video playback
@@ -56,7 +56,7 @@ Add the dependency to your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("io.fastpix.data:core:1.2.6")
+    implementation("io.fastpix.data:core:1.2.7")
 }
 ```
 
@@ -259,7 +259,7 @@ override fun onDestroy() {
 | `workspaceId`    | String            | ✅        | Your FastPix workspace identifier         |
 | `playerListener` | PlayerListener    | ✅        | Interface implementation for player state |
 | `videoData`      | VideoDataDetails  | ❌        | Video metadata (see below)                |
-| `beaconUrl`      | String            | ❌        | Custom beacon URL (default: metrix.ws)    |
+| `beaconUrl`      | String            | ❌        | Custom beacon URL (default: anlytix.io)   |
 | `playerData`     | PlayerDataDetails | ❌        | Player information                        |
 | `enableLogging`  | Boolean           | ❌        | Enable debug logs (default: true)         |
 | `customData`     | CustomDataDetails | ❌        | Custom metadata fields                    |

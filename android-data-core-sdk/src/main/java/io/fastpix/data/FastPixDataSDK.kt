@@ -4,6 +4,7 @@ import android.content.Context
 import io.fastpix.data.di.DependencyContainer
 import io.fastpix.data.domain.SDKConfiguration
 import io.fastpix.data.domain.enums.PlayerEventType
+import io.fastpix.data.domain.lifecycle.SdkLifecycleState
 import io.fastpix.data.domain.model.events.BufferedEventBuilder
 import io.fastpix.data.domain.model.events.BufferingEventBuilder
 import io.fastpix.data.domain.model.events.EndedEventBuilder
@@ -26,120 +27,204 @@ import io.fastpix.data.domain.state.SDKStateService
 import io.fastpix.data.domain.state.SessionService
 import io.fastpix.data.domain.wallclock.ViewWatchCounter
 import io.fastpix.data.sdkBuild.SDKBuildConfig
+import io.fastpix.data.storage.EventJsonCodec
 import io.fastpix.data.utils.Logger
 import io.fastpix.data.utils.ScalingTracker
-import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 
 /**
- * FastPix Data SDK - Main entry point for the SDK
+ * FastPix Data SDK - Main entry point. Lifecycle is managed via [SdkLifecycleState].
+ * Events are only dispatched when state is [SdkLifecycleState.INITIALIZED].
  */
 val scalingTracker = ScalingTracker()
 
 class FastPixDataSDK {
 
-    private var isInitialized = false
+    private val lifecycleState = AtomicReference(SdkLifecycleState.NOT_INITIALIZED)
     private var configuration: SDKConfiguration? = null
     private var context: Context? = null
 
     private var eventDispatcher: EventDispatcher? = null
     private var sdkStateService: SDKStateService? = null
-    private var pendingReleaseToken: UUID? = null
+    private var sessionCreatedAtMs: Long = 0L
+    private var lastVisibleAtMs: Long = 0L
+    private var totalVisibleDurationMs: Long = 0L
 
+    private fun currentState(): SdkLifecycleState = lifecycleState.get()
+
+    /** True when the SDK accepts events (state is [SdkLifecycleState.INITIALIZED]). */
+    fun isInitialized(): Boolean = currentState().isAcceptingEvents()
 
     /**
-     * Initialize the FastPix SDK with the provided configuration
-     *
-     * @param config SDK configuration containing all required parameters
-     * @param context Android application context
-     * @throws IllegalStateException if SDK is already initialized
-     * @throws IllegalArgumentException if configuration is invalid
+     * Initialize the FastPix SDK. Validates configuration, initializes dependencies and pipeline.
+     * Multiple calls are safely ignored when already [SdkLifecycleState.INITIALIZED].
      */
     @Synchronized
     fun initialize(config: SDKConfiguration, context: Context) {
-        if (isInitialized) {
-            throw IllegalStateException("FastPix SDK is already initialized")
+        Logger.configure(config.enableLogging && true)
+        when (currentState()) {
+            SdkLifecycleState.INITIALIZED -> return
+            SdkLifecycleState.INITIALIZING -> return
+            SdkLifecycleState.RELEASING, SdkLifecycleState.RELEASED -> {
+                Logger.logWarning(
+                    "FastPixDataSDK",
+                    "initialize() ignored: state is ${currentState()}"
+                )
+                return
+            }
+
+            SdkLifecycleState.NOT_INITIALIZED -> {}
         }
-        pendingReleaseToken = null
-        // Store context
-        this.context = context
-        // Store configuration
+
+        if (!lifecycleState.get().canTransitionTo(SdkLifecycleState.INITIALIZING)) return
+        lifecycleState.set(SdkLifecycleState.INITIALIZING)
+
+        this.context = context.applicationContext
         this.configuration = config
+
+        if (config.workspaceId.isBlank()) {
+            Logger.logWarning("FastPixDataSDK", "Invalid config: workspaceId is blank")
+            lifecycleState.set(SdkLifecycleState.NOT_INITIALIZED)
+            return
+        }
+
         if (config.beaconUrl?.isNotEmpty() == true) {
             SDKBuildConfig.SDK_URL = "https://${config.workspaceId}.${config.beaconUrl}"
         } else {
-            SDKBuildConfig.SDK_URL = "https://${config.workspaceId}.metrix.ws"
+            SDKBuildConfig.SDK_URL = "https://${config.workspaceId}.anlytix.io"
         }
-        // Initialize dependency container
+
         DependencyContainer.initialize(context)
         ViewWatchCounter.reset()
-        // Initialize dependencies
         initializeDependencies()
 
-        // Initialize logging if enabled
-        if (config.enableLogging) {
-            Logger.enableLogging()
-        }
-        // Mark as initialized
         ViewWatchCounter.start()
-        isInitialized = true
+        sessionCreatedAtMs = System.currentTimeMillis()
+        lastVisibleAtMs = sessionCreatedAtMs
+        totalVisibleDurationMs = 0L
+        lifecycleState.set(SdkLifecycleState.INITIALIZED)
+        Logger.log(
+            "FastPixDataSDK",
+            "TRACE_KEY: traceId=${SessionService.getTraceId() ?: "none"} sessionId=${SessionService.getSessionId() ?: "none"} videoId=${config.videoData?.videoId ?: "none"}"
+        )
+        Logger.log(
+            "FastPixDataSDK",
+            "${Logger.SDK_INITIALIZED}: debugEnabled=${config.enableLogging && true}, videoId=${config.videoData?.videoId ?: "none"}"
+        )
     }
 
     private fun initializeDependencies() {
         if (DependencyContainer.getViewerPref()?.getViewerId() == null) {
-            DependencyContainer.getViewerPref()?.viewerId(UUID.randomUUID().toString())
+            DependencyContainer.getViewerPref()?.viewerId(java.util.UUID.randomUUID().toString())
         }
         DependencyContainer.getViewerPref()?.saveSdkUrl(SDKBuildConfig.SDK_URL)
         SessionService.initializeSession()
         eventDispatcher = DependencyContainer.getEventDispatcher()
         sdkStateService = DependencyContainer.getSDKStateService()
-        configuration?.let { config ->
-            sdkStateService?.updateSDKConfiguration(config)
+        configuration?.let { sdkStateService?.updateSDKConfiguration(it) }
+        eventDispatcher?.let { dispatcher ->
+            kotlinx.coroutines.runBlocking {
+                dispatcher.onSdkInitialized()
+            }
         }
     }
 
     /**
-     * Dispatch a player event
-     *
-     * @param event The player event to dispatch
-     * @throws IllegalStateException if SDK is not initialized
+     * Dispatch a player event. Events are only enqueued when state is [SdkLifecycleState.INITIALIZED].
+     * Player adapters must use this only; they must not send to the network directly.
      */
     fun dispatchEvent(event: PlayerEventType, playheadTimeOverride: Int? = null) {
-        if (!isInitialized) return
-        val config = configuration ?: return
+        if (!currentState().isAcceptingEvents()) {
+            Logger.logWarning(
+                "FastPixDataSDK",
+                "EVENT_SKIPPED: sdk not accepting events, event=$event"
+            )
+            return
+        }
+        val config = configuration ?: run {
+            Logger.logWarning(
+                "FastPixDataSDK",
+                "EVENT_SKIPPED: missing configuration, event=$event"
+            )
+            return
+        }
+        val dispatcher = eventDispatcher ?: run {
+            Logger.logWarning("FastPixDataSDK", "EVENT_SKIPPED: missing dispatcher, event=$event")
+            return
+        }
+        val videoId = config.videoData?.videoId
+        val playerInstanceId = sdkStateService?.sdkState?.value?.playerId
+
         if (SessionService.validateSession()) {
             when (event) {
                 PlayerEventType.play -> {
                     ViewWatchCounter.start()
-                    val playEvent = PlayEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(playEvent)
+                    lastVisibleAtMs = System.currentTimeMillis()
+                    emitEvent(
+                        dispatcher,
+                        PlayEventBuilder.build(config),
+                        "play",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.viewBegin -> {
                     ViewWatchCounter.start()
-                    val viewBeginEvent = ViewBeginEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(viewBeginEvent)
+                    lastVisibleAtMs = System.currentTimeMillis()
+                    Logger.log(
+                        "FastPixDataSDK",
+                        "VIEW_BEGIN_TRIGGERED: video became visible"
+                    )
+                    emitEvent(
+                        dispatcher,
+                        ViewBeginEventBuilder.build(config),
+                        "viewBegin",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.playerReady -> {
                     ViewWatchCounter.start()
-                    val playerReadyEvent = PlayerReadyEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(playerReadyEvent)
+                    emitEvent(
+                        dispatcher,
+                        PlayerReadyEventBuilder.build(config),
+                        "playerReady",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.seeked -> {
-                    val seekedEvent = SeekedEventBuilder.build(config, playheadTimeOverride)
-                    eventDispatcher?.dispatchEvent(seekedEvent)
+                    emitEvent(
+                        dispatcher,
+                        SeekedEventBuilder.build(config, playheadTimeOverride),
+                        "seeked",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.variantChanged -> {
-                    val variantChangeEvent = VariantChangedEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(variantChangeEvent)
+                    emitEvent(
+                        dispatcher,
+                        VariantChangedEventBuilder.build(config),
+                        "variantChanged",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.playing -> {
                     ViewWatchCounter.start()
-                    val playingEvent = PlayingEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(playingEvent)
+                    emitEvent(
+                        dispatcher,
+                        PlayingEventBuilder.build(config),
+                        "playing",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.seeking -> {
@@ -148,125 +233,216 @@ class FastPixDataSDK {
                     } else {
                         SeekingEventBuilder.build(config)
                     }
-                    eventDispatcher?.dispatchEvent(seekingEvent)
+                    emitEvent(dispatcher, seekingEvent, "seeking", videoId, playerInstanceId)
                 }
 
                 PlayerEventType.pause -> {
                     ViewWatchCounter.pause()
+                    if (lastVisibleAtMs > 0L) {
+                        totalVisibleDurationMs += (System.currentTimeMillis() - lastVisibleAtMs).coerceAtLeast(
+                            0L
+                        )
+                    }
                     val pauseEvent = if (playheadTimeOverride != null) {
                         PauseEventBuilder.build(config, playheadTimeOverride)
                     } else {
                         PauseEventBuilder.build(config)
                     }
-                    eventDispatcher?.dispatchEvent(pauseEvent)
+                    emitEvent(dispatcher, pauseEvent, "pause", videoId, playerInstanceId)
                 }
 
                 PlayerEventType.buffering -> {
                     ViewWatchCounter.start()
-                    val bufferingEvent = BufferingEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(bufferingEvent)
+                    emitEvent(
+                        dispatcher,
+                        BufferingEventBuilder.build(config),
+                        "buffering_start",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.buffered -> {
-                    val bufferedEvent = BufferedEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(bufferedEvent)
+                    emitEvent(
+                        dispatcher,
+                        BufferedEventBuilder.build(config),
+                        "buffering_end",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.ended -> {
                     ViewWatchCounter.pause()
-                    val endedEvent = EndedEventBuilder.build(config, playheadTimeOverride)
-                    eventDispatcher?.dispatchEvent(endedEvent)
+                    emitEvent(
+                        dispatcher,
+                        EndedEventBuilder.build(config, playheadTimeOverride),
+                        "ended",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.viewCompleted -> {
-                    val viewCompletedEvent = ViewCompletedEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(viewCompletedEvent)
+                    emitEvent(
+                        dispatcher,
+                        ViewCompletedEventBuilder.build(config),
+                        "viewCompleted",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.error -> {
-                    val errorEvent = ErrorEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(errorEvent)
+                    emitEvent(
+                        dispatcher,
+                        ErrorEventBuilder.build(config),
+                        "error",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.requestCanceled -> {
-                    val requestCancelled = RequestCancelledEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(requestCancelled)
+                    emitEvent(
+                        dispatcher,
+                        RequestCancelledEventBuilder.build(config),
+                        "requestCanceled",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.requestFailed -> {
-                    val requestFailed = RequestFailedEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(requestFailed)
+                    emitEvent(
+                        dispatcher,
+                        RequestFailedEventBuilder.build(config),
+                        "requestFailed",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.requestCompleted -> {
-                    val requestCompleted = RequestCompletedEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(requestCompleted)
+                    emitEvent(
+                        dispatcher,
+                        RequestCompletedEventBuilder.build(config),
+                        "requestCompleted",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
 
                 PlayerEventType.pulse -> {
-                    val pulse = PulseEventBuilder.build(config)
-                    eventDispatcher?.dispatchEvent(pulse)
+                    emitEvent(
+                        dispatcher,
+                        PulseEventBuilder.build(config),
+                        "pulse",
+                        videoId,
+                        playerInstanceId
+                    )
                 }
             }
         } else {
+            Logger.logWarning(
+                "FastPixDataSDK",
+                "SESSION_RECREATED: event=$event triggered without valid session; creating new session"
+            )
             SessionService.initializeSession()
             sdkStateService?.viewBeginCalled()
-            val playerReadyEvent = PlayerReadyEventBuilder.build(config)
-            eventDispatcher?.dispatchEvent(playerReadyEvent)
-            val viewBeginEvent = ViewBeginEventBuilder.build(config)
-            eventDispatcher?.dispatchEvent(viewBeginEvent)
+            emitEvent(
+                dispatcher,
+                PlayerReadyEventBuilder.build(config),
+                "playerReady",
+                videoId,
+                playerInstanceId
+            )
+            emitEvent(
+                dispatcher,
+                ViewBeginEventBuilder.build(config),
+                "viewBegin",
+                videoId,
+                playerInstanceId
+            )
         }
-
     }
 
     /**
-     * Reset the SDK (for testing purposes)
+     * Release the SDK: enqueue viewCompleted, flush pipeline (no event loss), then clean up.
      */
     fun release(playheadTimeOverride: Int? = null) {
-        playheadTimeOverride?.let {
-            releaseInternal(playheadTimeOverride)
-        } ?: run {
-            releaseInternal()
-        }
-    }
-
-    @Synchronized
-    private fun releaseInternal(playheadTimeOverride: Int? = null) {
-        if (!isInitialized && configuration == null && pendingReleaseToken == null) {
-            Logger.logWarning("FastPixDataSDK", "release() called before initialization")
+        if (currentState().isReleased()) return
+        if (!currentState().canTransitionTo(SdkLifecycleState.RELEASING)) {
+            Logger.logWarning("FastPixDataSDK", "release() ignored: state is ${currentState()}")
             return
         }
 
-        if (pendingReleaseToken != null) {
-            Logger.logWarning("FastPixDataSDK", "release() already in progress")
-            return
+        val config = configuration
+        val releaseDuration = if (lastVisibleAtMs > 0L) {
+            totalVisibleDurationMs + (System.currentTimeMillis() - lastVisibleAtMs).coerceAtLeast(0L)
+        } else {
+            totalVisibleDurationMs
         }
-        configuration?.let {
-            val viewCompletedEvent =
-                ViewCompletedEventBuilder.build(it, playheadTimeOverride)
-            DependencyContainer.getEventPersistenceManager()
-                .savePendingEvents(listOf(viewCompletedEvent))
+        Logger.log(
+            "FastPixDataSDK",
+            "SESSION_ENDED: reason=release visibleDurationMs=$releaseDuration totalSessionMs=${System.currentTimeMillis() - sessionCreatedAtMs}"
+        )
+
+        config?.let {
+            val viewCompletedEvent = ViewCompletedEventBuilder.build(it, playheadTimeOverride)
+            val payload = EventJsonCodec.serialize(viewCompletedEvent)
+            Logger.log(
+                "FastPixDataSDK",
+                "EVENT_EMIT_BEFORE: event=viewCompleted payload=${payload ?: "serialization_failed"}"
+            )
+            eventDispatcher?.enqueue(viewCompletedEvent)
         }
-        val releaseToken = UUID.randomUUID()
-        pendingReleaseToken = releaseToken
+
+        lifecycleState.set(SdkLifecycleState.RELEASING)
+        Logger.log("FastPixDataSDK", "${Logger.SDK_RELEASE_STARTED}")
+
+        eventDispatcher?.flushAndShutdown()
         DependencyContainer.prepareForRelease()
-        eventDispatcher?.cleanThroughWorkManager {
-            onReleaseCleanupComplete(releaseToken)
-        } ?: onReleaseCleanupComplete(releaseToken)
+        eventDispatcher?.cleanThroughWorkManager(null)
+        eventDispatcher = null
+        sdkStateService = null
+        configuration = null
+        context = null
+
+        lifecycleState.set(SdkLifecycleState.RELEASED)
+        Logger.log("FastPixDataSDK", "${Logger.SDK_RELEASE_COMPLETED}")
     }
 
-    private fun onReleaseCleanupComplete(token: UUID) {
-        synchronized(this) {
-            if (pendingReleaseToken != token) {
-                return
-            }
-
-            pendingReleaseToken = null
-
-            if (!isInitialized) {
-                context = null
-                Logger.log("FastPixDataSDK", "Release cleanup completed")
-            }
+    private fun emitEvent(
+        dispatcher: EventDispatcher,
+        eventData: io.fastpix.data.domain.model.events.BaseEvent,
+        eventName: String,
+        videoId: String?,
+        playerInstanceId: String?
+    ) {
+        Logger.log("EVENT_NAME_KEY", eventName)
+        val payload = EventJsonCodec.serialize(eventData)
+        Logger.log(
+            "FastPixDataSDK",
+            "EVENT_EMIT_BEFORE: event=$eventName payload=${payload ?: "serialization_failed"}",
+            videoId = videoId,
+            playerInstanceId = playerInstanceId
+        )
+        val enqueued = dispatcher.dispatchEvent(eventData)
+        if (enqueued) {
+            Logger.log(
+                "FastPixDataSDK",
+                "EVENT_EMIT_AFTER: event=$eventName enqueue=success",
+                videoId = videoId,
+                playerInstanceId = playerInstanceId
+            )
+        } else {
+            Logger.logWarning(
+                "FastPixDataSDK",
+                "EVENT_EMIT_FAILED: event=$eventName enqueue=false",
+                videoId = videoId,
+                playerInstanceId = playerInstanceId
+            )
         }
     }
 }
