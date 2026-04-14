@@ -1,6 +1,7 @@
 package io.fastpix.data
 
 import android.content.Context
+import android.util.Log
 import io.fastpix.data.di.DependencyContainer
 import io.fastpix.data.domain.SDKConfiguration
 import io.fastpix.data.domain.enums.PlayerEventType
@@ -128,6 +129,8 @@ class FastPixDataSDK {
             }
         }
     }
+
+    private val TAG = "FastPixDataSDK"
 
     /**
      * Dispatch a player event. Events are only enqueued when state is [SdkLifecycleState.INITIALIZED].

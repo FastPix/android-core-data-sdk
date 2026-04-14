@@ -1,8 +1,11 @@
 package io.fastpix.data.domain.repository
 
 import io.fastpix.data.di.DependencyContainer
+import io.fastpix.data.domain.model.EventRequest
+import io.fastpix.data.domain.model.Metadata
 import io.fastpix.data.domain.model.events.BaseEvent
 import io.fastpix.data.pipeline.EventQueue
+import io.fastpix.data.storage.SessionStatus
 import io.fastpix.data.utils.Logger
 import io.fastpix.data.utils.NetworkTracker
 import io.fastpix.data.work.EventUploadScheduler
@@ -34,6 +37,8 @@ class EventDispatcher(
 ) {
     companion object {
         private const val DRAIN_CHUNK_SIZE = 100
+        private const val UPLOAD_INTERVAL_MS = 10_000L
+        private const val UPLOAD_BATCH_SIZE = 50
     }
 
     private val analyticsJob = SupervisorJob()
@@ -44,10 +49,12 @@ class EventDispatcher(
     private val isShuttingDown = AtomicBoolean(false)
 
     private var pipelineJob: Job? = null
+    private var uploadJob: Job? = null
 
     init {
         startNetworkMonitoring()
         startPipeline()
+        startPeriodicUpload()
     }
 
     /**
@@ -117,6 +124,65 @@ class EventDispatcher(
         }
     }
 
+    private fun startPeriodicUpload() {
+        uploadJob = analyticsScope.launch {
+            while (isActive && !isShuttingDown.get()) {
+                delay(UPLOAD_INTERVAL_MS)
+                if (!isNetworkAvailable.get()) continue
+                try {
+                    uploadPendingEvents()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Logger.logError("EventDispatcher", "Periodic upload failed", e)
+                }
+            }
+        }
+    }
+
+    private suspend fun uploadPendingEvents() {
+        val eventStore = DependencyContainer.getEventStore()
+        val sessions = eventStore.getAllSessions()
+        if (sessions.isEmpty()) return
+
+        for (session in sessions) {
+            if (isShuttingDown.get()) return
+            while (true) {
+                val events = eventStore.loadSessionEvents(session.sessionId, UPLOAD_BATCH_SIZE)
+                if (events.isEmpty()) {
+                    if (session.status == SessionStatus.COMPLETED) {
+                        eventStore.deleteSessionIfEmpty(session.sessionId)
+                    }
+                    break
+                }
+
+                val request = EventRequest(
+                    metadata = Metadata(transmission_timestamp = System.currentTimeMillis()),
+                    events = events.map { it.second }
+                )
+                Logger.log(
+                    "EventDispatcher",
+                    "PERIODIC_UPLOAD: sessionId=${session.sessionId} batchSize=${events.size}"
+                )
+
+                val response = eventApiService.sendEvents(request)
+                if (!response.isSuccessful) {
+                    Logger.logWarning(
+                        "EventDispatcher",
+                        "PERIODIC_UPLOAD_FAILED: sessionId=${session.sessionId} code=${response.code()}"
+                    )
+                    return
+                }
+
+                eventStore.deleteUploadedEvents(events.map { it.first })
+                Logger.log(
+                    "EventDispatcher",
+                    "PERIODIC_UPLOAD_SUCCESS: sessionId=${session.sessionId} uploaded=${events.size}"
+                )
+            }
+        }
+    }
+
     /**
      * Flush in-memory queue, persist remaining events, send final batches, then shut down.
      * Blocks until shutdown is complete. Must not be called concurrently with [enqueue].
@@ -125,14 +191,23 @@ class EventDispatcher(
         if (isShuttingDown.getAndSet(true)) return
         Logger.log("EventDispatcher", "${Logger.SDK_RELEASE_STARTED}: flushing and shutting down")
         runBlocking(Dispatchers.IO) {
+            uploadJob?.cancel()
+            pipelineJob?.cancel()
+
             eventQueue.close()
             val remaining = mutableListOf<BaseEvent>()
             eventQueue.drainAllTo(remaining)
             val eventStore = DependencyContainer.getEventStore()
             remaining.forEach { eventStore.onNewEvent(it) }
+
+            try {
+                uploadPendingEvents()
+            } catch (e: Exception) {
+                Logger.logError("EventDispatcher", "Final upload attempt failed", e)
+            }
+
             eventStore.markActiveSessionsCompleted()
             EventUploadScheduler.schedule(context)
-            pipelineJob?.cancel()
             analyticsJob.cancel()
         }
         Logger.log("EventDispatcher", "${Logger.SDK_RELEASE_COMPLETED}")

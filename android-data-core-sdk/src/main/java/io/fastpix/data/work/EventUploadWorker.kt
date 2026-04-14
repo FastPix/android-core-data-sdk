@@ -7,6 +7,7 @@ import io.fastpix.data.di.DependencyContainer
 import io.fastpix.data.domain.model.EventRequest
 import io.fastpix.data.domain.model.Metadata
 import io.fastpix.data.sdkBuild.SDKBuildConfig
+import io.fastpix.data.storage.SessionStatus
 import io.fastpix.data.utils.Logger
 import kotlinx.coroutines.CancellationException
 
@@ -29,22 +30,24 @@ class EventUploadWorker(
             val eventStore = DependencyContainer.getEventStore()
             val apiService = DependencyContainer.getEventApiService()
 
-            val completedSessions = eventStore.getCompletedSessions()
-            if (completedSessions.isEmpty()) {
-                Logger.log("EventUploadWorker", "No completed sessions to upload")
+            val allSessions = eventStore.getAllSessions()
+            if (allSessions.isEmpty()) {
+                Logger.log("EventUploadWorker", "No sessions to upload")
                 return Result.success()
             }
-            Logger.log("EventUploadWorker", "UPLOAD_SCAN: completedSessions=${completedSessions.size}")
+            Logger.log("EventUploadWorker", "UPLOAD_SCAN: sessions=${allSessions.size}")
 
-            for (session in completedSessions) {
+            for (session in allSessions) {
                 Logger.log(
                     "EventUploadWorker",
-                    "SESSION_UPLOAD_START: sessionId=${session.sessionId} viewId=${session.viewId}"
+                    "SESSION_UPLOAD_START: sessionId=${session.sessionId} viewId=${session.viewId} status=${session.status}"
                 )
                 while (true) {
                     val events = eventStore.loadSessionEvents(session.sessionId, MAX_BATCH_SIZE)
                     if (events.isEmpty()) {
-                        eventStore.deleteSessionIfEmpty(session.sessionId)
+                        if (session.status == SessionStatus.COMPLETED) {
+                            eventStore.deleteSessionIfEmpty(session.sessionId)
+                        }
                         Logger.log(
                             "EventUploadWorker",
                             "SESSION_UPLOAD_DONE: sessionId=${session.sessionId} noMoreEvents=true"
@@ -75,7 +78,9 @@ class EventUploadWorker(
                     }
 
                     eventStore.deleteUploadedEvents(events.map { it.first })
-                    eventStore.deleteSessionIfEmpty(session.sessionId)
+                    if (session.status == SessionStatus.COMPLETED) {
+                        eventStore.deleteSessionIfEmpty(session.sessionId)
+                    }
                 }
             }
 

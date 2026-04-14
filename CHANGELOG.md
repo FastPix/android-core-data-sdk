@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.8]
+### Added
+- Periodic in-process event upload in `EventDispatcher` that pushes pending events to the server every 10 seconds, reducing reliance on WorkManager for timely delivery.
+- `getAllSessions` query in `SessionDao` and `EventStore` to retrieve all sessions regardless of status.
+- Debug logging for dispatched events in `FastPixDataSDK`.
+
+### Fixed
+- Fixed `viewTimeToFirstFrame` calculation in `PlayingEvent` — value is now computed before the sent-flag is updated, ensuring the correct timestamp is captured.
+- Sessions are now only deleted after upload when their status is `COMPLETED`, preventing premature removal of active sessions in both `EventUploadWorker` and periodic upload.
+
+### Changed
+- `EventUploadWorker` now processes all sessions (not just completed ones), uploading their events while still respecting session lifecycle for deletion.
+- Refined pulse event scheduling in `FastPixBaseMedia3Player`: pulse timers are now started on `viewBegin`, `play`, `seeked` (when playing), and `buffering`, and cancelled only when the player is no longer playing after a seek.
+- Improved `EventDispatcher` shutdown sequence — cancels upload/pipeline jobs, flushes remaining events, and attempts a final upload before scheduling WorkManager fallback.
+
 ## [1.2.7]
 ## Changed
 - Replaced the manual event cleanup logic with a Room-based persistence layer and WorkManager-driven upload pipeline.

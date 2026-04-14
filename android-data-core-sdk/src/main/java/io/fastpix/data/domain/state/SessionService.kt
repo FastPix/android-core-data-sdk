@@ -30,6 +30,10 @@ object SessionService {
         lastEventTime = currentTime
         isSessionValid = true
         _sessionState.postValue(true)
+        Logger.log(
+            "SessionService",
+            "SESSION_CREATED: new analytics session started traceId=${traceId ?: "none"}"
+        )
     }
 
     /**
@@ -38,11 +42,16 @@ object SessionService {
      */
     fun validateSession(): Boolean {
         if (!isSessionValid || lastEventTime == null) {
+            Logger.logWarning("SessionService", "SESSION_INVALID: session missing or not initialized")
             return false
         }
 
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastEventTime!! >= SESSION_TIMEOUT_MS) {
+            Logger.logWarning(
+                "SessionService",
+                "SESSION_EXPIRED: inactivity exceeded timeoutMs=$SESSION_TIMEOUT_MS"
+            )
             invalidateSession()
             return false
         }
@@ -55,6 +64,7 @@ object SessionService {
      */
     private fun invalidateSession() {
         isSessionValid = false
+        Logger.logWarning("SessionService", "SESSION_INVALIDATED")
         sessionId = null
         traceId = null
         _sessionState.postValue(false)
@@ -64,6 +74,7 @@ object SessionService {
      * Manually reset all session data.
      */
     fun reset() {
+        Logger.log("SessionService", "SESSION_RESET")
         isSessionValid = false
         sessionId = null
         traceId = null

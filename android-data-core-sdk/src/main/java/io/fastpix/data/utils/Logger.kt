@@ -17,7 +17,7 @@ class Logger private constructor() {
          * Configure logging. Logs are emitted only for debug builds.
          */
         fun configure(enable: Boolean) {
-            isLoggingEnabled = enable
+            isLoggingEnabled = true
         }
 
         /**

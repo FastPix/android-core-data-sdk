@@ -79,6 +79,10 @@ class EventStore(
         }
     }
 
+    suspend fun getAllSessions(): List<SessionEntity> {
+        return sessionDao.getAllSessions()
+    }
+
     suspend fun loadSessionEvents(sessionId: String, maxBatchSize: Int): List<Pair<Long, BaseEvent>> {
         val entities = eventDao.getEventsBySessionId(sessionId, maxBatchSize)
         return entities.mapNotNull { entity ->

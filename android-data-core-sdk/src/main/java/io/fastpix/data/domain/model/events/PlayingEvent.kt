@@ -54,8 +54,8 @@ object PlayingEventBuilder {
         }
         var calculateViewTimeToFirstFrame = 0L
         if (!sdkState.viewTimeToFirstFrameSent) {
-            sdkStateService.updateViewTimeToFirstFrame()
             calculateViewTimeToFirstFrame = Utils.currentTimeStamp() - sdkState.viewBeginTime
+            sdkStateService.updateViewTimeToFirstFrame()
         }
         scalingTracker.collectDataForScaling(
             currentPlayheadTime = (playerListener.playHeadTime() ?: 0).toLong(),

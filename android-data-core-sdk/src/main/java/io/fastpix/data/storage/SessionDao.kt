@@ -22,6 +22,9 @@ interface SessionDao {
     @Query("UPDATE analytics_sessions SET status = :status WHERE sessionId = :sessionId")
     suspend fun updateStatusBySessionId(sessionId: String, status: SessionStatus): Int
 
+    @Query("SELECT * FROM analytics_sessions ORDER BY createdAt ASC")
+    suspend fun getAllSessions(): List<SessionEntity>
+
     @Query("DELETE FROM analytics_sessions WHERE sessionId = :sessionId")
     suspend fun deleteBySessionId(sessionId: String): Int
 }

@@ -23,11 +23,13 @@ object FastPixAnalytics {
             sdk = FastPixDataSDK()
         }
         Logger.configure(config.enableLogging)
+        Logger.log("FastPixAnalytics", "ANALYTICS_INITIALIZE_CALLED")
         sdk?.initialize(config, context)
     }
 
     @JvmStatic
     fun release(playheadTimeOverride: Int? = null) {
+        Logger.log("FastPixAnalytics", "ANALYTICS_RELEASE_CALLED")
         sdk?.release(playheadTimeOverride)
         sdk = null
     }
