@@ -110,7 +110,6 @@ class EventDispatcher(
                     if (drained.isNotEmpty()) {
                         drained.forEach { eventStore.onNewEvent(it) }
                         Logger.log("EventDispatcher", "${Logger.EVENT_BATCHED}: ${drained.size} events")
-                        EventUploadScheduler.schedule(context)
                     }
 
                     delay(500)
