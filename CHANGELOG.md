@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.9]
+- Introduced `IMMEDIATE_UPLOAD_EVENTS` set containing "viewBegin" and "playerReady".
+- Updated `EventDispatcher` to trigger an immediate upload if a critical event is detected in the drained event batch and network is available.
+
 ## [1.2.8]
 ### Added
 - Periodic in-process event upload in `EventDispatcher` that pushes pending events to the server every 10 seconds, reducing reliance on WorkManager for timely delivery.
