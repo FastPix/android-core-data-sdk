@@ -10,7 +10,9 @@ object SessionService {
     private var sessionId: String? = null
     private var traceId: String? = null
     private var sessionStartTime: Long? = null
+    @Volatile
     private var lastEventTime: Long? = null
+    @Volatile
     private var isSessionValid: Boolean = false
     private var sessionExpiryTime: Long? = null
     private val _sessionState = MutableLiveData<Boolean>()
@@ -21,6 +23,7 @@ object SessionService {
     /**
      * Start a new session (only after expiry or reset).
      */
+    @Synchronized
     fun initializeSession() {
         val currentTime = System.currentTimeMillis()
         sessionId = UUID.randomUUID().toString()
@@ -40,6 +43,7 @@ object SessionService {
      * Check if session is still valid.
      * If expired, invalidate session and return false.
      */
+    @Synchronized
     fun validateSession(): Boolean {
         if (!isSessionValid || lastEventTime == null) {
             Logger.logWarning("SessionService", "SESSION_INVALID: session missing or not initialized")
@@ -73,6 +77,7 @@ object SessionService {
     /**
      * Manually reset all session data.
      */
+    @Synchronized
     fun reset() {
         Logger.log("SessionService", "SESSION_RESET")
         isSessionValid = false

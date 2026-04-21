@@ -39,7 +39,6 @@ class EventDispatcher(
         private const val DRAIN_CHUNK_SIZE = 100
         private const val UPLOAD_INTERVAL_MS = 10_000L
         private const val UPLOAD_BATCH_SIZE = 50
-        private val IMMEDIATE_UPLOAD_EVENTS = setOf("viewBegin", "playerReady")
     }
 
     private val analyticsJob = SupervisorJob()
@@ -111,12 +110,7 @@ class EventDispatcher(
                     if (drained.isNotEmpty()) {
                         drained.forEach { eventStore.onNewEvent(it) }
                         Logger.log("EventDispatcher", "${Logger.EVENT_BATCHED}: ${drained.size} events")
-
-                        val hasCriticalEvent = drained.any { it.eventName in IMMEDIATE_UPLOAD_EVENTS }
-                        if (hasCriticalEvent && isNetworkAvailable.get()) {
-                            Logger.log("EventDispatcher", "IMMEDIATE_UPLOAD: critical event detected, uploading now")
-                            uploadPendingEvents()
-                        }
+                        EventUploadScheduler.schedule(context)
                     }
 
                     delay(500)

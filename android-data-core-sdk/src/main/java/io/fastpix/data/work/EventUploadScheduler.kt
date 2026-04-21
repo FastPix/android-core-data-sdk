@@ -17,7 +17,7 @@ object EventUploadScheduler {
     private const val STALE_ENQUEUED_TIMEOUT_MS = 2 * 60 * 1000L
 
     fun schedule(context: Context) {
-        val defaultPolicy = ExistingWorkPolicy.KEEP
+        val defaultPolicy = ExistingWorkPolicy.APPEND
         var effectivePolicy = defaultPolicy
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -60,7 +60,7 @@ object EventUploadScheduler {
                 } else {
                     val ageMs = now - firstSeen
                     if (ageMs >= STALE_ENQUEUED_TIMEOUT_MS) {
-                        effectivePolicy = ExistingWorkPolicy.REPLACE
+                        effectivePolicy = ExistingWorkPolicy.APPEND
                         prefs.edit().remove(KEY_ENQUEUED_ONLY_FIRST_SEEN_MS).apply()
                         Logger.logWarning(
                             "EventUploadScheduler",

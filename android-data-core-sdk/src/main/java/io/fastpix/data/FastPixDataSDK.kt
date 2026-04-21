@@ -173,19 +173,28 @@ class FastPixDataSDK {
                 }
 
                 PlayerEventType.viewBegin -> {
-                    ViewWatchCounter.start()
-                    lastVisibleAtMs = System.currentTimeMillis()
-                    Logger.log(
-                        "FastPixDataSDK",
-                        "VIEW_BEGIN_TRIGGERED: video became visible"
-                    )
-                    emitEvent(
-                        dispatcher,
-                        ViewBeginEventBuilder.build(config),
-                        "viewBegin",
-                        videoId,
-                        playerInstanceId
-                    )
+                    val alreadySent = sdkStateService?.sdkState?.value?.isViewBeginCalled == true
+                    if (alreadySent) {
+                        Logger.logWarning(
+                            "FastPixDataSDK",
+                            "VIEW_BEGIN_SKIPPED: viewBegin already dispatched for viewId=${sdkStateService?.sdkState?.value?.viewId}"
+                        )
+                    } else {
+                        ViewWatchCounter.start()
+                        lastVisibleAtMs = System.currentTimeMillis()
+                        sdkStateService?.viewBeginCalled()
+                        Logger.log(
+                            "FastPixDataSDK",
+                            "VIEW_BEGIN_TRIGGERED: video became visible"
+                        )
+                        emitEvent(
+                            dispatcher,
+                            ViewBeginEventBuilder.build(config),
+                            "viewBegin",
+                            videoId,
+                            playerInstanceId
+                        )
+                    }
                 }
 
                 PlayerEventType.playerReady -> {
@@ -349,24 +358,41 @@ class FastPixDataSDK {
         } else {
             Logger.logWarning(
                 "FastPixDataSDK",
-                "SESSION_RECREATED: event=$event triggered without valid session; creating new session"
+                "SESSION_RECREATED: event=$event triggered without valid session; creating new view"
             )
             SessionService.initializeSession()
+            sdkStateService?.clearSdkState()
+            configuration?.let { sdkStateService?.updateSDKConfiguration(it) }
+            ViewWatchCounter.reset()
+            ViewWatchCounter.start()
+            sessionCreatedAtMs = System.currentTimeMillis()
+            lastVisibleAtMs = sessionCreatedAtMs
+            totalVisibleDurationMs = 0L
+
+            val newVideoId = config.videoData?.videoId
+            val newPlayerInstanceId = sdkStateService?.sdkState?.value?.playerId
+
             sdkStateService?.viewBeginCalled()
             emitEvent(
                 dispatcher,
                 PlayerReadyEventBuilder.build(config),
                 "playerReady",
-                videoId,
-                playerInstanceId
+                newVideoId,
+                newPlayerInstanceId
             )
             emitEvent(
                 dispatcher,
                 ViewBeginEventBuilder.build(config),
                 "viewBegin",
-                videoId,
-                playerInstanceId
+                newVideoId,
+                newPlayerInstanceId
             )
+
+            Logger.log(
+                "FastPixDataSDK",
+                "SESSION_RECREATED: new viewId=${sdkStateService?.sdkState?.value?.viewId}, re-dispatching original event=$event"
+            )
+            dispatchEvent(event, playheadTimeOverride)
         }
     }
 

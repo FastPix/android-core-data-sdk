@@ -6,16 +6,20 @@ import kotlinx.parcelize.Parcelize
 
 val dummyData = listOf<DummyData>(
     DummyData(
-        "hfbvhdfbj",
-        "https://stream.mux.com/qZKFxPyV4poIzYW400LD31jWOPimpzSsivyDS00LSmR2A.m3u8",
+        "3e8a1bd0-b0f9-4539-90e7-de53fd46696f",
+        "https://stream.fastpix.co/3e8a1bd0-b0f9-4539-90e7-de53fd46696f.m3u8",
     ),
     DummyData(
-        "4547489",
-        "https://stream.mux.com/qZKFxPyV4poIzYW400LD31jWOPimpzSsivyDS00LSmR2A.m3u8",
+        "86520338-ede2-409e-b44e-da1dd4f73783",
+        "https://stream.fastpix.io/86520338-ede2-409e-b44e-da1dd4f73783.m3u8",
     ),
     DummyData(
-        "",
-        "https://stream.mux.com/qZKFxPyV4poIzYW400LD31jWOPimpzSsivyDS00LSmR2A.m3u8",
+        "7e7167ce-13dc-47e7-bad1-1541907ba3d4",
+        "https://stream.fastpix.io/7e7167ce-13dc-47e7-bad1-1541907ba3d4.m3u8",
+    ),
+    DummyData(
+        "5272e13b-4454-4622-8268-4b3f17970f2c",
+        "https://stream.fastpix.co/5272e13b-4454-4622-8268-4b3f17970f2c.m3u8",
     ),
     DummyData(
         "16ac212a-0f4f-49c5-9fd7-a42d9ff61541",
