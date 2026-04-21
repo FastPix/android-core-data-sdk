@@ -2,11 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.9]
+## [1.3.0]
 ### Added
 - Added unit test coverage for session lifecycle and SDK state transitions (`SessionServiceTest` and `SDKStateServiceTest`).
 - Added regression tests for duplicate `viewBegin` dispatch prevention and session recovery behavior in `FastPixDataSDKTest`.
 - Added test dependencies for MockK, AndroidX core-testing, and coroutine test utilities.
+
+## [1.2.9]
+- Introduced `IMMEDIATE_UPLOAD_EVENTS` set containing "viewBegin" and "playerReady".
+- Updated `EventDispatcher` to trigger an immediate upload if a critical event is detected in the drained event batch and network is available.
 
 ### Fixed
 - Prevented duplicate `viewBegin` events from being dispatched for the same active view.
